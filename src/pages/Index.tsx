@@ -41,24 +41,6 @@ const Index = () => {
     },
   ];
 
-  const testimonials = [
-    {
-      text: "HawkerGo has revolutionized how I run my stall. I've increased orders by 30% and reduced food waste significantly.",
-      author: "Lee Mei Ling",
-      role: "Chicken Rice Stall Owner"
-    },
-    {
-      text: "The digital menu and QR ordering system has been a game-changer. My customers love being able to order ahead of time.",
-      author: "Ahmad Bin Hassan",
-      role: "Nasi Padang Stall Owner"
-    },
-    {
-      text: "The AI forecasting helps me prepare the right amount of ingredients every day. No more guesswork!",
-      author: "Tan Wei Ming",
-      role: "Fishball Noodle Stall Owner"
-    }
-  ];
-
   return (
     <div className="relative">
       {/* Hero Section */}
@@ -98,10 +80,10 @@ const Index = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                onClick={() => navigate('/pricing')}
+                onClick={() => navigate('/hawker/login')}
                 className="text-base font-medium bg-white/90 backdrop-blur-sm"
               >
-                View Pricing
+                Login
               </Button>
             </div>
           </div>
@@ -144,9 +126,9 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedTransition>
             <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">Process</Badge>
+              <Badge variant="outline" className="mb-4">Registration Steps</Badge>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                How It Works
+                How To Get Started
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 Get your hawker stall online in just a few simple steps
@@ -267,37 +249,6 @@ const Index = () => {
             >
               Get Started Now
             </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 bg-secondary/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedTransition>
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">Testimonials</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                What Hawkers Are Saying
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Don't just take our word for it - hear from hawkers who are already using our platform.
-              </p>
-            </div>
-          </AnimatedTransition>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <AnimatedTransition key={index} animation="slide" delay={index * 0.1}>
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-                  <p className="text-lg mb-4 italic">{testimonial.text}</p>
-                  <div>
-                    <p className="font-semibold">{testimonial.author}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </div>
-              </AnimatedTransition>
-            ))}
           </div>
         </div>
       </section>

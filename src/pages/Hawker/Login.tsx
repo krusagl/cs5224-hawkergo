@@ -17,6 +17,37 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const handleLoginWithPreset = async (preset: 'demo' | 'admin') => {
+    try {
+      setLoading(true);
+      let presetEmail, presetPassword;
+      
+      if (preset === 'demo') {
+        presetEmail = 'demo@hawkergo.com';
+        presetPassword = 'demo123';
+      } else {
+        presetEmail = 'admin@hawkergo.com';
+        presetPassword = 'admin123';
+      }
+      
+      await login(presetEmail, presetPassword);
+      toast({
+        title: 'Success',
+        description: `Logged in as ${preset} account. Redirecting to dashboard...`,
+      });
+      navigate('/hawker/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: 'Error',
+        description: 'Login failed. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -101,6 +132,28 @@ const Login = () => {
                   disabled={loading}
                   required
                 />
+              </div>
+              
+              <div className="pt-2">
+                <p className="text-sm text-muted-foreground mb-2">Quick access accounts:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    disabled={loading}
+                    onClick={() => handleLoginWithPreset('demo')}
+                  >
+                    Demo Account
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    disabled={loading}
+                    onClick={() => handleLoginWithPreset('admin')}
+                  >
+                    Admin Account
+                  </Button>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">

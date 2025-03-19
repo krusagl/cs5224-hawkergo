@@ -4,371 +4,576 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { 
+  ShoppingCart, Search, Filter, Plus, Minus, X, ChevronRight
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, Search, AlertCircle, ChevronLeft, Store, Clock, Star } from 'lucide-react';
-import { MenuItem } from '@/hooks/useOrders';
-import MenuItemCard from '@/components/ui/MenuItemCard';
-import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { toast } from '@/hooks/use-toast';
+import { useOrders } from '@/hooks/useOrders';
+import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedTransition from '@/components/ui/AnimatedTransition';
 
-// Mock data
-const initialMenuItems: MenuItem[] = [
-  {
-    id: '1',
-    name: 'Chicken Rice',
-    description: 'Tender poached chicken served with fragrant rice, cucumber slices, and a side of chili sauce.',
-    price: 5.5,
-    image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-    category: 'mains',
-    available: true,
-  },
-  {
-    id: '2',
-    name: 'Hokkien Mee',
-    description: 'Stir-fried noodles with prawns, squid, pork belly, and bean sprouts in a rich seafood broth.',
-    price: 6.0,
-    image: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-    category: 'mains',
-    available: true,
-  },
-  {
-    id: '3',
-    name: 'Char Kway Teow',
-    description: 'Flat rice noodles stir-fried with light and dark soy sauce, chilli, prawns, cockles, bean sprouts and Chinese lap cheong sausage.',
-    price: 5.0,
-    image: 'https://images.unsplash.com/photo-1570275239925-4af0aa93a0dc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-    category: 'mains',
-    available: true,
-  },
-  {
-    id: '4',
-    name: 'Laksa',
-    description: 'Spicy coconut milk-based soup with thick rice noodles, prawns, fishcake, and bean sprouts.',
-    price: 6.5,
-    image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-    category: 'mains',
-    available: true,
-  },
-  {
-    id: '5',
-    name: 'Iced Teh Tarik',
-    description: 'Sweet milk tea served over ice, pulled to create a frothy top.',
-    price: 2.0,
-    image: 'https://images.unsplash.com/photo-1576426863848-c21f53c60b19?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-    category: 'drinks',
-    available: true,
-  },
-  {
-    id: '6',
-    name: 'Milo Dinosaur',
-    description: 'Iced milo topped with a mountain of milo powder.',
-    price: 2.5,
-    image: 'https://images.unsplash.com/photo-1569016832321-de4681f646b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-    category: 'drinks',
-    available: true,
-  },
-  {
-    id: '7',
-    name: 'Chendol',
-    description: 'Shaved ice dessert with green rice flour jelly, red beans, and coconut milk, topped with palm sugar syrup.',
-    price: 3.5,
-    image: 'https://images.unsplash.com/photo-1625938145744-e6e9749d3397?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-    category: 'desserts',
-    available: true,
-  },
-];
-
-const mockStallData = {
-  id: '1',
-  name: 'Delicious Food Stall',
-  description: 'Serving authentic Singaporean hawker cuisine since 1995. We take pride in our traditional recipes and quality ingredients.',
-  address: 'Smith Street, #01-123, Chinatown Complex',
-  openingHours: '10:30 AM - 8:30 PM',
-  image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-};
-
-interface StallInfo {
+// Mock data for menu items
+interface MenuItem {
   id: string;
   name: string;
   description: string;
-  address: string;
-  openingHours: string;
+  price: number;
   image: string;
+  category: string;
+  available: boolean;
 }
 
+// Cart item
 interface CartItem {
   menuItemId: string;
   name: string;
   price: number;
   quantity: number;
+  specialInstructions?: string;
 }
+
+// Mock stall details
+interface StallDetails {
+  id: string;
+  name: string;
+  description: string;
+  logoUrl: string;
+  address: string;
+  openingHours: string;
+}
+
+// Sample menu items
+const sampleMenuItems: MenuItem[] = [
+  {
+    id: '1',
+    name: 'Chicken Rice',
+    description: 'Tender poached chicken served with fragrant rice, cucumber slices, and homemade chili sauce.',
+    price: 5.5,
+    image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Main Dishes',
+    available: true
+  },
+  {
+    id: '2',
+    name: 'Wanton Mee',
+    description: 'Egg noodles with char siu (barbecued pork), leafy vegetables, and wonton dumplings.',
+    price: 6.0,
+    image: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Main Dishes',
+    available: true
+  },
+  {
+    id: '3',
+    name: 'Ice Kacang',
+    description: 'Shaved ice dessert with sweet syrup, red beans, and various toppings.',
+    price: 3.5,
+    image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Desserts',
+    available: true
+  },
+  {
+    id: '4',
+    name: 'Iced Teh Tarik',
+    description: 'Pulled milk tea served cold.',
+    price: 2.0,
+    image: 'https://images.unsplash.com/photo-1561504809-b9c78594de7f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Beverages',
+    available: true
+  },
+  {
+    id: '5',
+    name: 'Nasi Lemak',
+    description: 'Coconut rice served with sambal, fried fish, egg, cucumber, and peanuts.',
+    price: 5.0,
+    image: 'https://images.unsplash.com/photo-1536183903938-ade9d5119c5f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Main Dishes',
+    available: true
+  },
+  {
+    id: '6',
+    name: 'Satay',
+    description: 'Grilled skewered meat served with peanut sauce, rice cakes, cucumber, and onions.',
+    price: 7.0,
+    image: 'https://images.unsplash.com/photo-1475869743523-9bdf8a3a3f2a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Side Dishes',
+    available: true
+  },
+  {
+    id: '7',
+    name: 'Bandung',
+    description: 'Rose syrup with milk.',
+    price: 1.8,
+    image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Beverages',
+    available: true
+  },
+  {
+    id: '8',
+    name: 'Milo Dinosaur',
+    description: 'Iced milo topped with milo powder.',
+    price: 2.5,
+    image: 'https://images.unsplash.com/photo-1550645612-83f5d594b671?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Beverages',
+    available: true
+  }
+];
 
 const Menu = () => {
   const { stallId } = useParams<{ stallId: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [stallInfo, setStallInfo] = useState<StallInfo | null>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const { createOrder } = useOrders(stallId);
+  
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(sampleMenuItems);
+  const [stallDetails, setStallDetails] = useState<StallDetails | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Categories derived from menu items
+  const categories = React.useMemo(() => {
+    const cats = new Set(menuItems.map(item => item.category));
+    return ['All', ...Array.from(cats)];
+  }, [menuItems]);
+  
+  // Filtered menu items based on search and category
+  const filteredMenuItems = React.useMemo(() => {
+    return menuItems.filter(item => {
+      const matchesSearch = searchQuery 
+        ? item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          item.description.toLowerCase().includes(searchQuery.toLowerCase())
+        : true;
+        
+      const matchesCategory = selectedCategory && selectedCategory !== 'All'
+        ? item.category === selectedCategory
+        : true;
+        
+      return matchesSearch && matchesCategory && item.available;
+    });
+  }, [menuItems, searchQuery, selectedCategory]);
+  
+  // Fetch stall details and menu items
   useEffect(() => {
-    // In a real app, fetch stall data and menu items
-    // For now, use mock data
-    setTimeout(() => {
-      setStallInfo(mockStallData);
-      setMenuItems(initialMenuItems);
-      setLoading(false);
-    }, 1000);
+    const fetchStallData = async () => {
+      try {
+        setLoading(true);
+        // In a real app, this would fetch data from the API
+        // For now, let's use mock data
+        
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API delay
+        
+        setStallDetails({
+          id: stallId || '1',
+          name: 'Delicious Food Stall',
+          description: 'Serving the best local delicacies since 1995',
+          logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+          address: 'Smith Street, #01-123, Chinatown Complex',
+          openingHours: '10:00 AM - 8:00 PM',
+        });
+        
+        setMenuItems(sampleMenuItems);
+      } catch (error) {
+        console.error('Failed to fetch stall data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load menu data. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStallData();
   }, [stallId]);
-
-  const handleAddToCart = (item: MenuItem) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.menuItemId === item.id);
+  
+  // Calculate cart total
+  const cartTotal = React.useMemo(() => {
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }, [cart]);
+  
+  // Add item to cart
+  const addToCart = (item: MenuItem) => {
+    setCart(prev => {
+      const existingItem = prev.find(cartItem => cartItem.menuItemId === item.id);
       
       if (existingItem) {
-        return prevCart.map((cartItem) =>
-          cartItem.menuItemId === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+        return prev.map(cartItem => 
+          cartItem.menuItemId === item.id 
+            ? { ...cartItem, quantity: cartItem.quantity + 1 } 
             : cartItem
         );
       } else {
-        return [
-          ...prevCart,
-          {
-            menuItemId: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: 1,
-          },
-        ];
+        return [...prev, {
+          menuItemId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: 1
+        }];
       }
     });
     
     toast({
-      title: 'Added to cart',
-      description: `${item.name} has been added to your cart.`,
+      title: 'Added to Cart',
+      description: `${item.name} added to your order`,
     });
   };
-
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-  // Get unique categories
-  const categories = Array.from(new Set(menuItems.map((item) => item.category)));
-
-  // Filter items by search and category
-  const filteredItems = menuItems.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = activeCategory === 'all' || item.category === activeCategory;
-    return matchesSearch && matchesCategory && item.available;
-  });
+  
+  // Update cart item quantity
+  const updateCartItemQuantity = (itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(itemId);
+      return;
+    }
+    
+    setCart(prev => prev.map(item => 
+      item.menuItemId === itemId 
+        ? { ...item, quantity } 
+        : item
+    ));
+  };
+  
+  // Remove item from cart
+  const removeFromCart = (itemId: string) => {
+    setCart(prev => prev.filter(item => item.menuItemId !== itemId));
+  };
+  
+  // Update special instructions
+  const updateSpecialInstructions = (itemId: string, instructions: string) => {
+    setCart(prev => prev.map(item => 
+      item.menuItemId === itemId 
+        ? { ...item, specialInstructions: instructions } 
+        : item
+    ));
+  };
+  
+  // Clear the entire cart
+  const clearCart = () => {
+    setCart([]);
+  };
+  
+  // Proceed to checkout
+  const proceedToCheckout = () => {
+    if (cart.length === 0) {
+      toast({
+        title: 'Empty Cart',
+        description: 'Please add items to your cart before checking out',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Navigate to order page with cart data
+    navigate(`/stall/${stallId}/order`, { 
+      state: { 
+        cart,
+        stallDetails
+      } 
+    });
+  };
+  
+  // Toggle cart sidebar
+  const toggleCart = () => {
+    setIsCartOpen(prev => !prev);
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full bg-gray-200 mb-4"></div>
-          <div className="h-4 w-40 bg-gray-200 rounded mb-3"></div>
-          <div className="h-3 w-32 bg-gray-200 rounded"></div>
+          <div className="w-12 h-12 rounded-full bg-gray-200 mb-4"></div>
+          <div className="h-4 w-32 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
   }
 
-  if (!stallInfo) {
+  if (!stallDetails) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <AlertCircle className="h-16 w-16 text-destructive mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Stall Not Found</h1>
-        <p className="text-muted-foreground mb-6 text-center">
-          Sorry, we couldn't find the stall you're looking for.
-        </p>
-        <Button onClick={() => navigate('/')}>Return to Home</Button>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Stall Not Found</h2>
+          <p className="text-muted-foreground">The hawker stall you're looking for doesn't exist or has been removed.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="relative h-64 sm:h-80 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/70 z-10" />
-        <img
-          src={stallInfo.image}
-          alt={stallInfo.name}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 z-20 flex flex-col justify-end p-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')}
-            className="absolute top-4 left-4 text-white hover:bg-white/20 self-start"
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
+      {/* Stall Header */}
+      <div className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
           <AnimatedTransition>
-            <div className="space-y-2">
-              <Badge className="bg-primary/90 backdrop-blur-sm">Hawker Stall</Badge>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
-                {stallInfo.name}
-              </h1>
-              <div className="flex flex-wrap gap-3 text-white/90 text-sm">
-                <div className="flex items-center">
-                  <Store className="h-4 w-4 mr-1" />
-                  <span>{stallInfo.address}</span>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  <span>{stallInfo.openingHours}</span>
-                </div>
-                <div className="flex items-center">
-                  <Star className="h-4 w-4 mr-1 text-yellow-400" />
-                  <span>4.8 (128 reviews)</span>
-                </div>
+            <div className="flex items-center">
+              <div className="mr-4">
+                {stallDetails.logoUrl ? (
+                  <img 
+                    src={stallDetails.logoUrl} 
+                    alt={stallDetails.name} 
+                    className="w-12 h-12 rounded-full object-cover border"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-lg font-bold text-primary">
+                      {stallDetails.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
               </div>
+              
+              <div className="flex-1">
+                <h1 className="text-xl font-bold">{stallDetails.name}</h1>
+                <p className="text-sm text-muted-foreground">{stallDetails.description}</p>
+              </div>
+              
+              <Button
+                onClick={toggleCart}
+                className="relative ml-4"
+                size="icon"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  </span>
+                )}
+              </Button>
             </div>
           </AnimatedTransition>
         </div>
       </div>
-
-      <div className="container mx-auto p-4 sm:p-6 relative -mt-6">
-        <AnimatedTransition>
-          <Card className="mb-6 shadow-lg">
-            <CardContent className="p-6">
-              <p className="text-muted-foreground">{stallInfo.description}</p>
-            </CardContent>
-          </Card>
-        </AnimatedTransition>
-
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-1">
-            <AnimatedTransition>
-              <Card className="mb-6">
-                <CardContent className="p-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search menu items..."
-                      className="pl-9"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </AnimatedTransition>
-
-            <AnimatedTransition delay={0.1}>
-              <Tabs defaultValue="all" value={activeCategory} onValueChange={setActiveCategory}>
-                <TabsList className="mb-6 w-full overflow-x-auto">
-                  <TabsTrigger value="all">All Items</TabsTrigger>
-                  {categories.map((category) => (
-                    <TabsTrigger key={category} value={category}>
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-
-                <div>
-                  {filteredItems.length === 0 ? (
-                    <Card>
-                      <CardContent className="p-6 text-center">
-                        <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                        <h3 className="font-medium text-lg mb-1">No items found</h3>
-                        <p className="text-muted-foreground">
-                          {searchQuery
-                            ? `No menu items matching "${searchQuery}"`
-                            : `No items in this category`}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                      {filteredItems.map((item) => (
-                        <MenuItemCard
-                          key={item.id}
-                          item={item}
-                          onClick={handleAddToCart}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Tabs>
-            </AnimatedTransition>
+      
+      {/* Search and Categories */}
+      <div className="container mx-auto px-4 py-4">
+        <AnimatedTransition delay={0.1}>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search menu..."
+                className="pl-10 w-full"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex overflow-x-auto py-1 gap-2 no-scrollbar">
+              {categories.map((category, index) => (
+                <Button
+                  key={index}
+                  variant={selectedCategory === category || (category === 'All' && !selectedCategory) ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category === 'All' ? null : category)}
+                  className="whitespace-nowrap"
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
           </div>
-
-          <div className="lg:w-1/3">
-            <AnimatedTransition delay={0.2}>
-              <div className="lg:sticky lg:top-6">
-                <Card className="shadow-lg">
-                  <CardContent className="p-6">
-                    <h2 className="text-xl font-bold mb-4 flex items-center">
-                      <ShoppingCart className="h-5 w-5 mr-2" />
-                      Your Order
-                    </h2>
-
-                    {cart.length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <ShoppingCart className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                        <h3 className="font-medium mb-2">Your cart is empty</h3>
-                        <p className="text-muted-foreground text-sm mb-4">
-                          Add items from the menu to get started
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="space-y-4 mb-6">
-                          {cart.map((item, index) => (
-                            <div key={index} className="flex justify-between">
-                              <div>
-                                <div className="flex items-center">
-                                  <span className="font-medium">{item.quantity}x</span>
-                                  <span className="ml-2">{item.name}</span>
-                                </div>
-                              </div>
-                              <span className="font-medium">S${(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="border-t pt-4 mb-6">
-                          <div className="flex justify-between mb-2">
-                            <span className="text-muted-foreground">Subtotal</span>
-                            <span>S${totalAmount.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-lg font-bold">
-                            <span>Total</span>
-                            <span>S${totalAmount.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    <Button
-                      className="w-full"
-                      size="lg"
-                      onClick={() => navigate(`/stall/${stallId}/order`)}
-                      disabled={cart.length === 0}
-                    >
-                      {cart.length > 0
-                        ? `Checkout (${totalItems} item${totalItems !== 1 ? 's' : ''})`
-                        : 'Add items to order'}
-                    </Button>
+        </AnimatedTransition>
+        
+        {/* Menu Items Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-20">
+          {filteredMenuItems.length === 0 ? (
+            <div className="col-span-full py-8 text-center">
+              <h3 className="text-lg font-medium mb-2">No items found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search or filter criteria
+              </p>
+            </div>
+          ) : (
+            filteredMenuItems.map((item, index) => (
+              <AnimatedTransition key={item.id} delay={index * 0.05} animation="slide">
+                <Card className="overflow-hidden h-full flex flex-col">
+                  <div 
+                    className="h-48 bg-muted"
+                    style={{ 
+                      backgroundImage: `url(${item.image})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }}
+                  ></div>
+                  
+                  <CardContent className="p-4 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold">{item.name}</h3>
+                      <Badge variant="outline">{item.category}</Badge>
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground mb-4 flex-1">
+                      {item.description}
+                    </p>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">S${item.price.toFixed(2)}</span>
+                      <Button
+                        onClick={() => addToCart(item)}
+                        size="sm"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add to Cart
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-              </div>
-            </AnimatedTransition>
-          </div>
+              </AnimatedTransition>
+            ))
+          )}
         </div>
       </div>
+      
+      {/* Cart Sidebar */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-20"
+              onClick={toggleCart}
+            ></motion.div>
+            
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 20 }}
+              className="fixed top-0 right-0 bottom-0 w-full sm:w-96 bg-white shadow-lg z-30 flex flex-col"
+            >
+              <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-lg font-semibold">Your Order</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleCart}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              <div className="flex-1 overflow-auto p-4">
+                {cart.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center">
+                    <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Your cart is empty</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Add items from the menu to start your order
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={toggleCart}
+                    >
+                      Browse Menu
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {cart.map((item) => (
+                      <div key={item.menuItemId} className="border rounded-lg p-3">
+                        <div className="flex justify-between mb-2">
+                          <span className="font-medium">{item.name}</span>
+                          <span>S${(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center border rounded-md">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-r-none"
+                              onClick={() => updateCartItemQuantity(item.menuItemId, item.quantity - 1)}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-8 text-center">{item.quantity}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-l-none"
+                              onClick={() => updateCartItemQuantity(item.menuItemId, item.quantity + 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeFromCart(item.menuItemId)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                        
+                        <input
+                          type="text"
+                          placeholder="Special instructions..."
+                          className="w-full p-2 text-sm border rounded-md"
+                          value={item.specialInstructions || ''}
+                          onChange={(e) => updateSpecialInstructions(item.menuItemId, e.target.value)}
+                        />
+                      </div>
+                    ))}
+                    
+                    {cart.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        className="w-full text-muted-foreground"
+                        onClick={clearCart}
+                      >
+                        Clear Cart
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-4 border-t">
+                <div className="flex justify-between mb-4">
+                  <span className="font-medium">Total</span>
+                  <span className="font-bold">S${cartTotal.toFixed(2)}</span>
+                </div>
+                
+                <Button
+                  className="w-full"
+                  disabled={cart.length === 0}
+                  onClick={proceedToCheckout}
+                >
+                  Proceed to Checkout
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* Mobile Cart Button */}
+      {!isCartOpen && cart.length > 0 && (
+        <motion.div
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          exit={{ y: 100 }}
+          className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10"
+        >
+          <Button
+            onClick={toggleCart}
+            className="px-6 py-6 rounded-full shadow-lg"
+          >
+            <ShoppingCart className="mr-2 h-5 w-5" />
+            <span className="mr-2">View Cart</span>
+            <span className="bg-white text-primary rounded-full px-2 py-0.5 text-sm font-bold">
+              S${cartTotal.toFixed(2)}
+            </span>
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 };
