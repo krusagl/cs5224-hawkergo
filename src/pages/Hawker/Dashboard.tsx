@@ -320,7 +320,7 @@ const Dashboard = () => {
             </div>
           </AnimatedTransition>
           
-          {/* Recent Transactions */}
+          {/* Recent Transactions - Moved up as requested */}
           <AnimatedTransition delay={0.1}>
             <Card>
               <CardHeader>
@@ -391,7 +391,7 @@ const Dashboard = () => {
             </Card>
           </AnimatedTransition>
           
-          {/* Sales Trends */}
+          {/* Sales Trends - Moved down as requested */}
           <AnimatedTransition delay={0.2}>
             <Card>
               <CardHeader className="pb-2">
@@ -443,7 +443,7 @@ const Dashboard = () => {
                       tick={{ fontSize: 12 }}
                     />
                     <YAxis 
-                      hide={true}
+                      hide={false}
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Bar 
@@ -531,63 +531,6 @@ const Dashboard = () => {
                 >
                   <ShoppingBag className="mr-2 h-4 w-4" />
                   Go to Operation Mode
-                </Button>
-              </CardContent>
-            </Card>
-          </AnimatedTransition>
-          
-          <AnimatedTransition delay={0.4}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 grid gap-3">
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto py-3"
-                  onClick={() => navigate('/hawker/menu')}
-                >
-                  <div className="flex items-center">
-                    <div className="bg-primary/10 p-2 rounded-full mr-3">
-                      <Utensils className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-medium">Manage Menu</div>
-                      <div className="text-xs text-muted-foreground">Update your menu items and prices</div>
-                    </div>
-                  </div>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto py-3"
-                  onClick={() => navigate('/hawker/analytics')}
-                >
-                  <div className="flex items-center">
-                    <div className="bg-primary/10 p-2 rounded-full mr-3">
-                      <BarChart2 className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-medium">Analytics & Billing</div>
-                      <div className="text-xs text-muted-foreground">View detailed sales analytics and billing</div>
-                    </div>
-                  </div>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="justify-start h-auto py-3"
-                  onClick={() => setShowQRCode(true)}
-                >
-                  <div className="flex items-center">
-                    <div className="bg-primary/10 p-2 rounded-full mr-3">
-                      <QrCode className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-medium">Display QR Code</div>
-                      <div className="text-xs text-muted-foreground">Show QR code for customers to scan</div>
-                    </div>
-                  </div>
                 </Button>
               </CardContent>
             </Card>
