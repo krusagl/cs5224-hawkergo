@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Clock, CheckCircle, AlertCircle, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -60,14 +59,12 @@ const OrderCard: React.FC<OrderCardProps> = ({
     }
   };
 
-  const getPaymentStatusBadge = (status: Order['paymentStatus']) => {
+  const getPaymentStatusBadge = (status: 'paid' | 'pending') => {
     switch (status) {
       case 'paid':
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Paid</Badge>;
       case 'pending':
         return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Payment Pending</Badge>;
-      case 'failed':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Payment Failed</Badge>;
       default:
         return null;
     }
@@ -146,7 +143,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   className="w-full"
                   onClick={() => onUpdateStatus(order.id, 'preparing')}
                 >
-                  Accept & Start Preparing
+                  Start Preparing
                 </Button>
               )}
               
@@ -170,13 +167,13 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </Button>
               )}
               
-              {order.status !== 'cancelled' && order.status !== 'completed' && (
+              {(order.status === 'pending' || order.status === 'preparing' || order.status === 'ready' || order.status === 'scheduled') && (
                 <Button 
                   variant="outline" 
                   className="w-full text-destructive hover:bg-destructive/10"
                   onClick={() => onUpdateStatus(order.id, 'cancelled')}
                 >
-                  Cancel Order
+                  Cancel & Refund Order
                 </Button>
               )}
             </CardFooter>

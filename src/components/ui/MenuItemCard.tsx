@@ -5,8 +5,18 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { MenuItem } from '@/hooks/useOrders';
 import AnimatedTransition from './AnimatedTransition';
+
+// Define MenuItem interface locally instead of importing from useOrders
+export interface MenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+  available: boolean;
+}
 
 interface MenuItemCardProps {
   item: MenuItem;

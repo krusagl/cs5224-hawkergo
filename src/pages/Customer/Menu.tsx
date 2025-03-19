@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -86,16 +85,13 @@ const CustomerMenu = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [orderType, setOrderType] = useState<'dine-in' | 'takeaway'>('dine-in');
   
-  // Fetch stall details and menu
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Mock stall data
         const mockStallDetails: StallDetails = {
           id: stallId || '1',
           name: 'Ah Ming Noodles',
@@ -122,7 +118,6 @@ const CustomerMenu = () => {
     fetchData();
   }, [stallId]);
   
-  // Calculate total items and price in cart
   const cartQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   
@@ -232,7 +227,6 @@ const CustomerMenu = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Stall Header */}
       <div className="relative h-52 sm:h-64 bg-gradient-to-r from-gray-700 to-gray-900 overflow-hidden">
         <img 
           src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
@@ -259,7 +253,6 @@ const CustomerMenu = () => {
           </div>
         </AnimatedTransition>
         
-        {/* Menu Items */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
           {menuItems.map((item) => (
             <AnimatedTransition key={item.menuItemId} delay={0.1}>
@@ -327,7 +320,6 @@ const CustomerMenu = () => {
         </div>
       </div>
       
-      {/* Floating Cart Button */}
       {cart.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg">
           <div className="container mx-auto max-w-5xl">
@@ -357,10 +349,9 @@ const CustomerMenu = () => {
         </div>
       )}
       
-      {/* Checkout Modal */}
       {checkoutOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4">
-          <AnimatedTransition animation="scale">
+          <AnimatedTransition animation="fade">
             <Card className="w-full max-w-md mx-auto">
               <CardHeader>
                 <h2 className="text-xl font-bold">Your Order</h2>
@@ -427,3 +418,4 @@ const CustomerMenu = () => {
 };
 
 export default CustomerMenu;
+
