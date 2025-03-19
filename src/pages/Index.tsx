@@ -118,8 +118,8 @@ const Index = () => {
             <AnimatedTransition delay={0.2}>
               <div className="rounded-lg overflow-hidden shadow-xl">
                 <img 
-                  src="https://images.unsplash.com/photo-1567647753830-de3fe7ce9f28?q=80&w=1300&auto=format&fit=crop"
-                  alt="Lau Pat Sat Hawker Centre" 
+                  src="https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=1300&auto=format&fit=crop"
+                  alt="Lau Pat Sat Hawker Centre Aerial View" 
                   className="w-full h-auto object-cover"
                 />
               </div>

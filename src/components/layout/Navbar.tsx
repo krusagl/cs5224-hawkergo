@@ -33,21 +33,6 @@ const Navbar = () => {
           <span className="font-bold text-xl">HawkerGo</span>
         </Link>
         
-        <nav className="hidden md:flex items-center space-x-6">
-          <Link to="/" className="text-sm font-medium hover:text-primary">
-            Home
-          </Link>
-          <Link to="/about" className="text-sm font-medium hover:text-primary">
-            About
-          </Link>
-          <Link to="/pricing" className="text-sm font-medium hover:text-primary">
-            Pricing
-          </Link>
-          <Link to="/contact" className="text-sm font-medium hover:text-primary">
-            Contact
-          </Link>
-        </nav>
-        
         <div className="flex items-center space-x-4">
           <Link to="/hawker/login">
             <Button variant="outline" size="sm">

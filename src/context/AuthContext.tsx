@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const mockUser: User = {
         id: '1',
         email,
-        name: accountType ? accountType.charAt(0).toUpperCase() + accountType.slice(1) : 'Sample Hawker',
+        name: accountType || 'Demo',
         role: 'hawker',
         stallName: 'Ah Ming Noodles',
         stallAddress: 'Maxwell Food Centre, #01-23',
