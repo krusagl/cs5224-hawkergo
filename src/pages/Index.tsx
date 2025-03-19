@@ -1,277 +1,298 @@
 
-import React, { useRef, useEffect } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ArrowRight, CheckCircle, QrCode, Image, ShoppingCart, BarChart } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { CheckCircle, ArrowRight } from 'lucide-react';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 
+const features = [
+  {
+    title: 'Digital Menu Management',
+    description: 'Easily update your menu items, prices, and availability in real-time.',
+  },
+  {
+    title: 'Order Processing',
+    description: 'Receive and manage customer orders efficiently without crowding at your stall.',
+  },
+  {
+    title: 'QR Code Ordering',
+    description: 'Customers can scan a QR code to view your menu and place orders.',
+  },
+  {
+    title: 'Sales Analytics',
+    description: 'Get insights into your sales trends and popular items to optimize your business.',
+  },
+  {
+    title: 'Customer Notifications',
+    description: 'Automatically notify customers when their orders are ready for collection.',
+  },
+  {
+    title: 'Demand Forecasting',
+    description: 'AI-powered predictions to help you prepare for busy periods.',
+  },
+];
+
+const pricingTiers = [
+  {
+    name: 'Free',
+    price: '$0',
+    description: 'Perfect for new hawkers trying out digital solutions',
+    features: [
+      'Digital menu with up to 10 items',
+      'Basic order management',
+      'QR code generation',
+      'Up to 50 orders per month',
+      'Basic sales reports',
+    ],
+    action: 'Get Started',
+    highlighted: false,
+  },
+  {
+    name: 'Standard',
+    price: '$29',
+    period: '/month',
+    description: 'For established hawkers looking to grow',
+    features: [
+      'Unlimited menu items',
+      'Advanced order management',
+      'Custom QR code design',
+      'Unlimited orders',
+      'Advanced analytics',
+      'Priority support',
+      'Demand forecasting',
+    ],
+    action: 'Subscribe',
+    highlighted: true,
+  },
+  {
+    name: 'Premium',
+    price: '$59',
+    period: '/month',
+    description: 'For multiple stalls and advanced needs',
+    features: [
+      'Everything in Standard',
+      'Multiple stall management',
+      'Loyalty program tools',
+      'Integration with delivery services',
+      'White-label mobile app',
+      '24/7 Priority support',
+      'Advanced AI analytics',
+    ],
+    action: 'Contact Sales',
+    highlighted: false,
+  },
+];
+
 const Index = () => {
-  const navigate = useNavigate();
-  const targetRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: targetRef,
-    offset: ["start start", "end start"]
-  });
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.9]);
-  const y = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
-
-  const features = [
-    {
-      icon: <Image className="h-6 w-6" />,
-      title: "Digital Menu Creation",
-      description: "Easily upload images and text to create a beautiful digital menu for your stall.",
-    },
-    {
-      icon: <QrCode className="h-6 w-6" />,
-      title: "Custom QR Code",
-      description: "Generate a unique QR code and URL to display at your stall for easy customer access.",
-    },
-    {
-      icon: <ShoppingCart className="h-6 w-6" />,
-      title: "Digital Ordering",
-      description: "Accept orders and payments digitally, streamlining your operations.",
-    },
-    {
-      icon: <BarChart className="h-6 w-6" />,
-      title: "AI Demand Forecasting",
-      description: "Get AI-powered demand forecasts to optimize ingredient preparation and reduce waste.",
-    },
-  ];
-
   return (
-    <div className="relative">
+    <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <div ref={targetRef} className="relative h-screen flex items-center justify-center overflow-hidden">
-        <motion.div 
-          style={{ opacity, scale, y }}
-          className="absolute inset-0 z-0"
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-background/80" />
-          <img 
-            src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2340&q=80" 
-            alt="Hawker stall"
-            className="w-full h-full object-cover"
-          />
-        </motion.div>
-
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <Badge variant="outline" className="mb-6 px-3 py-1 text-sm font-medium bg-white/90 backdrop-blur-sm">
-              Digitizing Hawker Food Experiences
-            </Badge>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white drop-shadow-sm">
-              The Digital Solution for Hawker Stalls
-            </h1>
-            <p className="text-lg md:text-xl mb-8 text-white/90 drop-shadow-sm">
-              Create digital menus, generate QR codes, accept online orders, and get AI-powered demand forecasts.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/hawker/register')}
-                className="text-base font-medium"
-              >
-                Get Started
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={() => navigate('/hawker/login')}
-                className="text-base font-medium bg-white/90 backdrop-blur-sm"
-              >
-                Login
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedTransition>
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">Features</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Everything You Need To Digitize Your Stall
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Our platform offers a comprehensive suite of tools designed specifically for hawker stall owners.
-              </p>
-            </div>
-          </AnimatedTransition>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <AnimatedTransition key={index} animation="slide" delay={index * 0.1}>
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-4">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+      <section className="bg-gradient-to-b from-primary/20 to-background pt-16">
+        <div className="container mx-auto px-4 py-16 sm:py-24 lg:py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <AnimatedTransition>
+              <div>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+                  Digitize Your <span className="text-primary">Hawker Stall</span> Business
+                </h1>
+                <p className="text-xl text-muted-foreground mb-8">
+                  Streamline orders, reduce queues, and gain valuable insights with our digital hawker stall management platform.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link to="/hawker/login">
+                    <Button size="lg" className="w-full sm:w-auto">
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link to="/hawker/login">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                      View Demo
+                    </Button>
+                  </Link>
                 </div>
-              </AnimatedTransition>
-            ))}
+              </div>
+            </AnimatedTransition>
+            
+            <AnimatedTransition delay={0.2}>
+              <div className="rounded-lg overflow-hidden shadow-xl">
+                <img 
+                  src="https://images.unsplash.com/photo-1567647753830-de3fe7ce9f28?q=80&w=1300&auto=format&fit=crop"
+                  alt="Lau Pat Sat Hawker Centre" 
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            </AnimatedTransition>
           </div>
         </div>
       </section>
-
-      {/* How It Works */}
-      <section className="py-20 bg-secondary/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      
+      {/* Features Section */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
           <AnimatedTransition>
             <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">Registration Steps</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                How To Get Started
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Get your hawker stall online in just a few simple steps
+              <h2 className="text-3xl font-bold tracking-tight">All-in-One Solution for Hawkers</h2>
+              <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
+                Everything you need to manage your hawker stall efficiently in one simple platform.
               </p>
             </div>
           </AnimatedTransition>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            <AnimatedTransition animation="slide" delay={0.1}>
+          
+          <AnimatedTransition delay={0.1}>
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {features.map((feature, index) => (
+                <Card key={index} className="border hover:border-primary/50 transition-colors">
+                  <CardContent className="pt-6">
+                    <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                      <CheckCircle className="h-4 w-4 text-primary" />
+                    </div>
+                    <h3 className="font-semibold text-lg mt-2">{feature.title}</h3>
+                    <p className="text-muted-foreground mt-2">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </AnimatedTransition>
+        </div>
+      </section>
+      
+      {/* How It Works */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <AnimatedTransition>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tight">Getting Started Is Easy</h2>
+              <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
+                Follow these simple steps to bring your hawker stall into the digital age.
+              </p>
+            </div>
+          </AnimatedTransition>
+          
+          <AnimatedTransition delay={0.1}>
+            <div className="grid gap-8 md:grid-cols-3">
               <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mb-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg mb-4">
                   1
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Sign Up</h3>
+                <h3 className="font-semibold text-lg mb-2">Create Your Account</h3>
                 <p className="text-muted-foreground">
-                  Create your account and provide basic information about your hawker stall.
+                  Sign up in minutes and add your stall information and menu items.
                 </p>
               </div>
-            </AnimatedTransition>
-
-            <AnimatedTransition animation="slide" delay={0.2}>
+              
               <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mb-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg mb-4">
                   2
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Create Your Menu</h3>
+                <h3 className="font-semibold text-lg mb-2">Display Your QR Code</h3>
                 <p className="text-muted-foreground">
-                  Upload photos and add descriptions for your menu items through our easy-to-use interface.
+                  Print and display your unique QR code at your stall for customers to scan.
                 </p>
               </div>
-            </AnimatedTransition>
-
-            <AnimatedTransition animation="slide" delay={0.3}>
+              
               <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mb-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg mb-4">
                   3
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Go Live</h3>
+                <h3 className="font-semibold text-lg mb-2">Manage Orders & Grow</h3>
                 <p className="text-muted-foreground">
-                  Display your QR code at your stall and start accepting digital orders immediately.
+                  Receive orders digitally, analyze sales data, and optimize your business.
                 </p>
               </div>
-            </AnimatedTransition>
-          </div>
+            </div>
+          </AnimatedTransition>
         </div>
       </section>
-
+      
       {/* Pricing */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
           <AnimatedTransition>
             <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">Pricing</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Affordable Plans for Every Hawker
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Our tier-based pay-per-use model keeps costs affordable for smaller hawkers.
+              <h2 className="text-3xl font-bold tracking-tight">Simple, Transparent Pricing</h2>
+              <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
+                Choose the plan that works best for your business needs.
               </p>
             </div>
           </AnimatedTransition>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <AnimatedTransition animation="slide" delay={0.1}>
-              <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-                <h3 className="text-xl font-semibold mb-4">Transaction Fees</h3>
-                <div className="mb-6">
-                  <p className="text-4xl font-bold mb-2">Free<span className="text-base font-normal text-muted-foreground"> for first S$2,000</span></p>
-                  <p className="text-lg">0.5% for amounts exceeding S$2,000 per month</p>
+          
+          <AnimatedTransition delay={0.1}>
+            <div className="grid gap-8 lg:grid-cols-3 max-w-5xl mx-auto">
+              {pricingTiers.map((tier, index) => (
+                <div 
+                  key={index}
+                  className={`border rounded-lg overflow-hidden ${
+                    tier.highlighted 
+                      ? 'border-primary bg-primary/5 shadow-lg relative' 
+                      : 'bg-card'
+                  }`}
+                >
+                  {tier.highlighted && (
+                    <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 text-xs font-medium rounded-bl-lg">
+                      Popular
+                    </div>
+                  )}
+                  
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold">{tier.name}</h3>
+                    <div className="mt-2 flex items-baseline">
+                      <span className="text-3xl font-bold">{tier.price}</span>
+                      {tier.period && (
+                        <span className="ml-1 text-sm text-muted-foreground">{tier.period}</span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {tier.description}
+                    </p>
+                  </div>
+                  
+                  <div className="px-6 pb-6">
+                    <ul className="mt-4 space-y-3">
+                      {tier.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start">
+                          <CheckCircle className="h-5 w-5 text-primary shrink-0 mr-2" />
+                          <span className="text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <div className="mt-6">
+                      <Link to="/hawker/login">
+                        <Button
+                          variant={tier.highlighted ? 'default' : 'outline'}
+                          className="w-full"
+                        >
+                          {tier.action}
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>No monthly subscription fees</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>Only pay when you receive orders</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>Unlimited menu items and QR code generation</span>
-                  </li>
-                </ul>
-              </div>
-            </AnimatedTransition>
-
-            <AnimatedTransition animation="slide" delay={0.2}>
-              <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
-                <h3 className="text-xl font-semibold mb-4">AI-Powered Demand Analysis</h3>
-                <div className="mb-6">
-                  <p className="text-4xl font-bold mb-2">S$25<span className="text-base font-normal text-muted-foreground"> per analysis</span></p>
-                  <p className="text-lg">Pay only when you need it</p>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>Forecast 5 dishes' demands for the next 15 days</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>Optimize ingredient purchasing and preparation</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span>Reduce food waste and maximize profits</span>
-                  </li>
-                </ul>
-              </div>
-            </AnimatedTransition>
-          </div>
-
-          <div className="text-center mt-12">
-            <Button 
-              size="lg" 
-              onClick={() => navigate('/hawker/register')}
-              className="text-base font-medium"
-            >
-              Get Started Now
-            </Button>
-          </div>
+              ))}
+            </div>
+          </AnimatedTransition>
         </div>
       </section>
-
-      {/* CTA */}
-      <section className="py-20 bg-primary">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-              Ready to Digitize Your Hawker Stall?
+      
+      {/* CTA Section */}
+      <section className="py-16 bg-primary/10">
+        <div className="container mx-auto px-4 text-center">
+          <AnimatedTransition>
+            <h2 className="text-3xl font-bold tracking-tight mb-4">
+              Ready to Modernize Your Hawker Business?
             </h2>
-            <p className="text-xl mb-8 text-white/90">
-              Join hundreds of hawkers who have already transformed their business with HawkerGo.
+            <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Join hundreds of hawkers who are already using our platform to streamline their operations and grow their business.
             </p>
-            <Button 
-              size="lg" 
-              variant="secondary"
-              onClick={() => navigate('/hawker/register')}
-              className="text-base font-medium"
-            >
-              Get Started for Free
-            </Button>
-          </div>
+            <Link to="/hawker/login">
+              <Button size="lg">
+                Get Started Today
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </AnimatedTransition>
         </div>
       </section>
     </div>

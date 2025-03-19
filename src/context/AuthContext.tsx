@@ -10,12 +10,13 @@ export interface User {
   stallAddress?: string;
   stallDescription?: string;
   stallLogo?: string;
+  accountType?: 'demo' | 'admin';
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, accountType?: 'demo' | 'admin') => Promise<void>;
   register: (userData: Partial<User>, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
@@ -44,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, accountType?: 'demo' | 'admin') => {
     try {
       setLoading(true);
       // In a real app, this would be a fetch call to your authentication API
@@ -52,11 +53,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const mockUser: User = {
         id: '1',
         email,
-        name: 'Sample Hawker',
+        name: accountType ? accountType.charAt(0).toUpperCase() + accountType.slice(1) : 'Sample Hawker',
         role: 'hawker',
-        stallName: 'Delicious Food Stall',
-        stallAddress: 'Smith Street, #01-123, Chinatown Complex',
-        stallDescription: 'Serving the best local delicacies since 1995',
+        stallName: 'Ah Ming Noodles',
+        stallAddress: 'Maxwell Food Centre, #01-23',
+        stallDescription: 'Traditional Chinese noodles with the best ingredients since 1980',
+        accountType: accountType,
       };
       
       setUser(mockUser);

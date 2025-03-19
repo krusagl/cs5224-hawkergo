@@ -9,21 +9,21 @@ import {
   BarChart2, 
   QrCode, 
   ShoppingBag, 
-  FileText, 
   ChevronRight, 
   Clock, 
   Utensils, 
-  ArrowUpRight, 
   DollarSign,
   Bell,
-  ArrowRight,
-  Calendar,
-  TrendingUp
+  TrendingUp,
+  CheckCircle,
+  LayoutDashboard,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
-import { format, subDays, startOfDay } from 'date-fns';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { format, subDays, startOfDay, addDays } from 'date-fns';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps } from 'recharts';
+import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import QRCodeGenerator from '@/components/ui/QRCodeGenerator';
-import OrderCard from '@/components/ui/OrderCard';
 import { useOrders, Order } from '@/hooks/useOrders';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { toast } from '@/hooks/use-toast';
@@ -42,46 +42,34 @@ const generateSalesTrendData = (days: number = 7) => {
 
 // Generate mock data for sales predictions
 const generateSalesPredictionData = (days: number = 7) => {
+  const today = new Date();
   return Array.from({ length: days }).map((_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() + i);
+    const date = addDays(today, i);
     return {
       date: format(date, 'MMM dd'),
+      sales: Math.floor(Math.random() * 300) + 100,
       predicted: Math.floor(Math.random() * 300) + 100,
     };
   });
 };
 
-const SalesChart = ({ data, dataKey = 'sales', stroke = "#8884d8" }) => (
-  <ResponsiveContainer width="100%" height={200}>
-    <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-      <defs>
-        <linearGradient id={`color${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={stroke} stopOpacity={0.3} />
-          <stop offset="95%" stopColor={stroke} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-      <XAxis 
-        dataKey="date" 
-        tickLine={false}
-        axisLine={false}
-        tick={{ fontSize: 12 }}
-      />
-      <YAxis 
-        hide={true}
-      />
-      <Tooltip />
-      <Area 
-        type="monotone" 
-        dataKey={dataKey} 
-        stroke={stroke} 
-        fillOpacity={1} 
-        fill={`url(#color${dataKey})`} 
-      />
-    </AreaChart>
-  </ResponsiveContainer>
-);
+const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background p-2 border rounded shadow-sm">
+        <p className="font-medium text-sm">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} className="text-xs" style={{ color: entry.color }}>
+            {entry.dataKey === 'predicted' 
+              ? `Predicted: S$${entry.value}` 
+              : `Sales: S$${entry.value}`}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -90,10 +78,10 @@ const Dashboard = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('7d');
   const [hasNewNotification, setHasNewNotification] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<Order['status'] | 'all'>('all');
   
-  // Mock data for sales trends and predictions
-  const [salesTrendData, setSalesTrendData] = useState(generateSalesTrendData(7));
-  const [salesPredictionData, setSalesPredictionData] = useState(generateSalesPredictionData(7));
+  // Combined data for sales trends and predictions
+  const [combinedSalesData, setCombinedSalesData] = useState(generateSalesPredictionData(14));
   
   // Update chart data when time range changes
   useEffect(() => {
@@ -102,7 +90,7 @@ const Dashboard = () => {
     else if (timeRange === '90d') days = 90;
     else if (timeRange === '1y') days = 365;
     
-    setSalesTrendData(generateSalesTrendData(days));
+    setCombinedSalesData(generateSalesPredictionData(days));
   }, [timeRange]);
 
   useEffect(() => {
@@ -153,7 +141,11 @@ const Dashboard = () => {
     
   const pendingOrders = orders.filter(order => order.status === 'pending');
   const preparingOrders = orders.filter(order => order.status === 'preparing');
-  const recentTransactions = [...pendingOrders, ...preparingOrders].sort(
+  const readyOrders = orders.filter(order => order.status === 'ready');
+  const completedOrders = orders.filter(order => order.status === 'completed');
+  const scheduledOrders = orders.filter(order => order.status === 'scheduled'); // New status
+  
+  const recentTransactions = [...orders].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
@@ -164,8 +156,13 @@ const Dashboard = () => {
       case 'preparing': return 'bg-blue-500';
       case 'ready': return 'bg-green-500';
       case 'completed': return 'bg-gray-500';
+      case 'scheduled': return 'bg-purple-500';
       default: return 'bg-red-500';
     }
+  };
+  
+  const getStatusName = (status: Order['status']) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
   
   const uniqueMenuItemIds = [...new Set(orders.flatMap(order => order.items.map(item => item.menuItemId)))];
@@ -198,19 +195,13 @@ const Dashboard = () => {
         <AnimatedTransition className="mt-4 md:mt-0 w-full md:w-auto">
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <Button 
-              variant="outline" 
-              onClick={() => navigate('/hawker/menu')}
-              className="w-full sm:w-auto"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Edit Menu
-            </Button>
-            <Button 
               onClick={() => navigate('/hawker/operation-mode')}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto flex items-center gap-2"
+              size="lg"
             >
-              <ShoppingBag className="mr-2 h-4 w-4" />
-              Operation Mode
+              <LayoutDashboard className="h-5 w-5" />
+              <span>Dashboard Mode</span>
+              <ToggleRight className="ml-1 h-5 w-5 text-muted-foreground" />
             </Button>
             <Button
               variant="outline"
@@ -285,7 +276,7 @@ const Dashboard = () => {
                       to="/hawker/orders" 
                       className="text-xs text-primary hover:underline flex items-center"
                     >
-                      View all orders <ArrowUpRight className="h-3 w-3 ml-1" />
+                      View all orders
                     </Link>
                   </div>
                 </CardContent>
@@ -303,7 +294,7 @@ const Dashboard = () => {
                       to="/hawker/menu" 
                       className="text-xs text-primary hover:underline flex items-center"
                     >
-                      Manage menu <ArrowUpRight className="h-3 w-3 ml-1" />
+                      Manage menu
                     </Link>
                   </div>
                 </CardContent>
@@ -321,7 +312,7 @@ const Dashboard = () => {
                       onClick={() => setHasNewNotification(false)}
                       className="text-xs text-primary hover:underline flex items-center"
                     >
-                      Mark as read <ArrowUpRight className="h-3 w-3 ml-1" />
+                      Mark as read
                     </button>
                   </div>
                 </CardContent>
@@ -329,14 +320,85 @@ const Dashboard = () => {
             </div>
           </AnimatedTransition>
           
-          {/* Sales Trends */}
+          {/* Recent Transactions */}
           <AnimatedTransition delay={0.1}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Recent Transactions</CardTitle>
+                <CardDescription>Manage your incoming and current orders</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="pending">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="pending">Pending ({pendingOrders.length})</TabsTrigger>
+                    <TabsTrigger value="preparing">Preparing ({preparingOrders.length})</TabsTrigger>
+                    <TabsTrigger value="scheduled">Scheduled ({scheduledOrders.length})</TabsTrigger>
+                    <TabsTrigger value="completed">Completed ({completedOrders.length})</TabsTrigger>
+                  </TabsList>
+                  
+                  {['pending', 'preparing', 'scheduled', 'completed'].map((status) => (
+                    <TabsContent key={status} value={status} className="m-0">
+                      {orders.filter(o => o.status === status).length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground">
+                          No {status} orders
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {orders
+                            .filter(o => o.status === status)
+                            .slice(0, 5)
+                            .map((order) => (
+                              <div key={order.id} className="flex items-center p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                                <div className={`w-3 h-3 rounded-full ${getStatusColor(order.status)} mr-3`}></div>
+                                <div className="flex-1">
+                                  <div className="flex justify-between">
+                                    <span className="font-medium">{order.customerName}</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {format(new Date(order.createdAt), 'h:mm a')}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">{order.items.length} items · S${order.totalAmount.toFixed(2)}</span>
+                                    <span className="capitalize font-medium text-xs px-2 py-0.5 rounded-full bg-muted">
+                                      {order.status}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => navigate('/hawker/operation-mode')}
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )
+                          )}
+                          
+                          <Button
+                            variant="outline"
+                            className="w-full mt-2"
+                            onClick={() => navigate('/hawker/operation-mode')}
+                          >
+                            View All Transactions <ChevronRight className="ml-1 h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </CardContent>
+            </Card>
+          </AnimatedTransition>
+          
+          {/* Sales Trends */}
+          <AnimatedTransition delay={0.2}>
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg font-semibold">Sales Trend</CardTitle>
-                    <CardDescription>Overview of your recent sales performance</CardDescription>
+                    <CardTitle className="text-lg font-semibold">Sales Trend & Prediction</CardTitle>
+                    <CardDescription>Overview of your recent and predicted sales performance</CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button 
@@ -371,14 +433,42 @@ const Dashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <SalesChart data={salesTrendData} dataKey="sales" stroke="#8884d8" />
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={combinedSalesData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                    <XAxis 
+                      dataKey="date" 
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis 
+                      hide={true}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar 
+                      dataKey="sales" 
+                      name="Actual Sales" 
+                      fill="#8884d8"
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                    />
+                    <Bar 
+                      dataKey="predicted" 
+                      name="Predicted Sales" 
+                      fill="#82ca9d"
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
                 
                 <div className="flex items-center justify-between text-sm mt-4">
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Total sales:</span> S${salesTrendData.reduce((acc, curr) => acc + curr.sales, 0).toFixed(2)}
+                    <span className="font-medium">Past 7 days:</span> S${combinedSalesData.slice(0, 7).reduce((acc, curr) => acc + (curr.sales || 0), 0).toFixed(2)}
                   </div>
                   <div className="text-muted-foreground">
-                    <span className="font-medium">Orders:</span> {salesTrendData.reduce((acc, curr) => acc + curr.orders, 0)}
+                    <span className="font-medium">Predicted 7 days:</span> S${combinedSalesData.slice(7, 14).reduce((acc, curr) => acc + (curr.predicted || 0), 0).toFixed(2)}
                   </div>
                   <Button 
                     variant="ghost" 
@@ -386,243 +476,119 @@ const Dashboard = () => {
                     className="text-primary"
                     onClick={() => navigate('/hawker/analytics')}
                   >
-                    View detailed analytics <ArrowRight className="ml-1 h-3 w-3" />
+                    View analytics <ChevronRight className="ml-1 h-3 w-3" />
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </AnimatedTransition>
-          
-          {/* Latest Orders */}
-          <AnimatedTransition delay={0.2}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Recent Transactions</CardTitle>
-                <CardDescription>Manage your incoming and current orders</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="recent">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="recent">Recent</TabsTrigger>
-                    <TabsTrigger value="pending">Pending ({pendingOrders.length})</TabsTrigger>
-                    <TabsTrigger value="preparing">Preparing ({preparingOrders.length})</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="recent" className="m-0">
-                    {recentTransactions.length === 0 ? (
-                      <div className="text-center py-6 text-muted-foreground">
-                        No recent transactions
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {recentTransactions.slice(0, 5).map((order) => (
-                          <div key={order.id} className="flex items-center p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                            <div className={`w-3 h-3 rounded-full ${getStatusColor(order.status)} mr-3`}></div>
-                            <div className="flex-1">
-                              <div className="flex justify-between">
-                                <span className="font-medium">{order.customerName}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  {format(new Date(order.createdAt), 'h:mm a')}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">{order.items.length} items · S${order.totalAmount.toFixed(2)}</span>
-                                <span className="capitalize font-medium text-xs px-2 py-0.5 rounded-full bg-muted">
-                                  {order.status}
-                                </span>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => navigate('/hawker/operation-mode')}
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        
-                        <Button
-                          variant="outline"
-                          className="w-full mt-2"
-                          onClick={() => navigate('/hawker/operation-mode')}
-                        >
-                          View All Transactions <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="pending" className="m-0">
-                    {pendingOrders.length === 0 ? (
-                      <div className="text-center py-6 text-muted-foreground">
-                        No pending orders at the moment
-                      </div>
-                    ) : (
-                      <div className="grid gap-4">
-                        {pendingOrders.slice(0, 4).map((order) => (
-                          <OrderCard
-                            key={order.id}
-                            order={order}
-                            onUpdateStatus={handleUpdateOrderStatus}
-                          />
-                        ))}
-                        {pendingOrders.length > 4 && (
-                          <Button
-                            variant="outline"
-                            className="mt-2"
-                            onClick={() => navigate('/hawker/operation-mode')}
-                          >
-                            View All Pending Orders <ChevronRight className="ml-1 h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="preparing" className="m-0">
-                    {preparingOrders.length === 0 ? (
-                      <div className="text-center py-6 text-muted-foreground">
-                        No orders being prepared at the moment
-                      </div>
-                    ) : (
-                      <div className="grid gap-4">
-                        {preparingOrders.slice(0, 4).map((order) => (
-                          <OrderCard
-                            key={order.id}
-                            order={order}
-                            onUpdateStatus={handleUpdateOrderStatus}
-                          />
-                        ))}
-                        {preparingOrders.length > 4 && (
-                          <Button
-                            variant="outline"
-                            className="mt-2"
-                            onClick={() => navigate('/hawker/operation-mode')}
-                          >
-                            View All Preparing Orders <ChevronRight className="ml-1 h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
               </CardContent>
             </Card>
           </AnimatedTransition>
         </div>
         
-        {/* Right Column - Sales Prediction & QR Code */}
+        {/* Right Column - Latest Orders */}
         <div className="space-y-6">
-          {/* Sales Prediction */}
           <AnimatedTransition delay={0.3}>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg font-semibold">Sales Prediction</CardTitle>
-                <CardDescription>AI-powered forecast for the next 7 days</CardDescription>
+                <CardTitle className="text-lg font-semibold">Latest Orders</CardTitle>
+                <CardDescription>Your most recent transactions</CardDescription>
               </CardHeader>
-              <CardContent>
-                <SalesChart data={salesPredictionData} dataKey="predicted" stroke="#82ca9d" />
+              <CardContent className="p-4">
+                {recentTransactions.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    No recent transactions
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {recentTransactions.slice(0, 8).map((order) => (
+                      <div key={order.id} className="py-3 px-1 hover:bg-muted/50 transition-colors rounded-md">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center">
+                            <span className={`h-2 w-2 rounded-full ${getStatusColor(order.status)} mr-2`}></span>
+                            <span className="text-sm font-medium">
+                              {format(new Date(order.createdAt), 'h:mm a')}
+                            </span>
+                          </div>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-muted">
+                            {getStatusName(order.status)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>{order.items.length} items</span>
+                          <span className="font-medium">S${order.totalAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground truncate">
+                          {order.customerName}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 
-                <div className="mt-4 space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Predicted total: </span>
-                    <span className="font-medium">S${salesPredictionData.reduce((acc, curr) => acc + curr.predicted, 0).toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="p-3 bg-muted/30 rounded-lg border border-muted">
-                    <h4 className="text-sm font-medium flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-primary" />
-                      Busiest predicted day
-                    </h4>
-                    <p className="text-sm mt-1">
-                      {salesPredictionData.reduce((max, curr) => curr.predicted > max.predicted ? curr : max).date}
-                    </p>
-                  </div>
-                  
-                  <Button
-                    className="w-full"
-                    onClick={() => navigate('/hawker/analytics')}
-                  >
-                    Generate Detailed Forecast
-                    <BarChart2 className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full mt-4"
+                  onClick={() => navigate('/hawker/operation-mode')}
+                >
+                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  Go to Operation Mode
+                </Button>
               </CardContent>
             </Card>
           </AnimatedTransition>
           
-          {/* Digital Menu URL */}
           <AnimatedTransition delay={0.4}>
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg font-semibold">Your Digital Menu URL</CardTitle>
-                <CardDescription>Share this link to allow customers to browse your menu</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="bg-muted p-3 rounded-md text-sm font-mono break-all">
-                  {stallUrl}
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => {
-                      navigator.clipboard.writeText(stallUrl);
-                      toast({
-                        title: 'Copied!',
-                        description: 'URL copied to clipboard',
-                      });
-                    }}
-                  >
-                    Copy Link
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => window.open(stallUrl, '_blank')}
-                  >
-                    Open Menu
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </AnimatedTransition>
-          
-          {/* Quick Actions */}
-          <AnimatedTransition delay={0.5}>
-            <Card>
-              <CardHeader>
                 <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
-                <CardDescription>Common tasks you might want to perform</CardDescription>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/hawker/menu')}
-                    className="justify-start"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Update Menu Items
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/hawker/operation-mode')}
-                    className="justify-start"
-                  >
-                    <ShoppingBag className="mr-2 h-4 w-4" />
-                    Enter Operation Mode
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/hawker/analytics')}
-                    className="justify-start"
-                  >
-                    <BarChart2 className="mr-2 h-4 w-4" />
-                    View Analytics
-                  </Button>
-                </div>
+              <CardContent className="p-4 grid gap-3">
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto py-3"
+                  onClick={() => navigate('/hawker/menu')}
+                >
+                  <div className="flex items-center">
+                    <div className="bg-primary/10 p-2 rounded-full mr-3">
+                      <Utensils className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium">Manage Menu</div>
+                      <div className="text-xs text-muted-foreground">Update your menu items and prices</div>
+                    </div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto py-3"
+                  onClick={() => navigate('/hawker/analytics')}
+                >
+                  <div className="flex items-center">
+                    <div className="bg-primary/10 p-2 rounded-full mr-3">
+                      <BarChart2 className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium">Analytics & Billing</div>
+                      <div className="text-xs text-muted-foreground">View detailed sales analytics and billing</div>
+                    </div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto py-3"
+                  onClick={() => setShowQRCode(true)}
+                >
+                  <div className="flex items-center">
+                    <div className="bg-primary/10 p-2 rounded-full mr-3">
+                      <QrCode className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium">Display QR Code</div>
+                      <div className="text-xs text-muted-foreground">Show QR code for customers to scan</div>
+                    </div>
+                  </div>
+                </Button>
               </CardContent>
             </Card>
           </AnimatedTransition>

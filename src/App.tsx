@@ -17,12 +17,11 @@ import NotFound from "./pages/NotFound";
 
 // Hawker Pages
 import HawkerLogin from "./pages/Hawker/Login";
-import HawkerRegister from "./pages/Hawker/Register";
 import HawkerDashboard from "./pages/Hawker/Dashboard";
 import HawkerMenuEditor from "./pages/Hawker/MenuEditor";
 import HawkerOrders from "./pages/Hawker/Orders";
 import HawkerAnalytics from "./pages/Hawker/Analytics";
-import HawkerOperationMode from "./pages/Hawker/OperationMode"; // New import
+import HawkerOperationMode from "./pages/Hawker/OperationMode";
 
 // Customer Pages
 import CustomerMenu from "./pages/Customer/Menu";
@@ -53,12 +52,11 @@ const App = () => (
                 
                 {/* Hawker Routes */}
                 <Route path="/hawker/login" element={<HawkerLogin />} />
-                <Route path="/hawker/register" element={<HawkerRegister />} />
                 <Route path="/hawker/dashboard" element={<HawkerDashboard />} />
                 <Route path="/hawker/menu" element={<HawkerMenuEditor />} />
                 <Route path="/hawker/orders" element={<HawkerOrders />} />
                 <Route path="/hawker/analytics" element={<HawkerAnalytics />} />
-                <Route path="/hawker/operation-mode" element={<HawkerOperationMode />} /> {/* New route */}
+                <Route path="/hawker/operation-mode" element={<HawkerOperationMode />} />
                 
                 {/* Customer Routes */}
                 <Route path="/stall/:stallId" element={<CustomerMenu />} />

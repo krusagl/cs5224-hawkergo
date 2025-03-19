@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Plus, Trash2, Save, ArrowLeft, Image as ImageIcon, 
-  DollarSign, Tag, ChevronRight, ChevronLeft, Loader2, AlertCircle
+  DollarSign, Tag, Loader2, AlertCircle, Eye
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
@@ -26,47 +25,42 @@ interface MenuItem {
   available: boolean;
 }
 
-interface MenuCategoryGroup {
-  name: string;
-  items: MenuItem[];
-}
-
-// Initial menu items
+// Initial menu items for Chinese noodle stall
 const initialMenuItems: MenuItem[] = [
   {
     id: '1',
-    name: 'Chicken Rice',
-    description: 'Tender poached chicken served with fragrant rice, cucumber slices, and homemade chili sauce.',
-    price: 5.5,
-    image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    category: 'Main Dishes',
+    name: 'Fishball Noodles',
+    description: 'Delicious noodles served with handmade fishballs in a savory broth.',
+    price: 5,
+    image: 'https://images.unsplash.com/photo-1573570095791-df66f86d5b58?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Noodle Dishes',
     available: true
   },
   {
     id: '2',
-    name: 'Wanton Mee',
-    description: 'Egg noodles with char siu (barbecued pork), leafy vegetables, and wonton dumplings.',
-    price: 6.0,
-    image: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    category: 'Main Dishes',
+    name: 'Bak Chor Mee',
+    description: 'Minced pork noodles with black vinegar, chili, and various toppings.',
+    price: 5,
+    image: 'https://images.unsplash.com/photo-1626804475297-41608ea09aeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Noodle Dishes',
     available: true
   },
   {
     id: '3',
-    name: 'Ice Kacang',
-    description: 'Shaved ice dessert with sweet syrup, red beans, and various toppings.',
-    price: 3.5,
-    image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    category: 'Desserts',
+    name: 'Fishball Soup',
+    description: 'A light and tasty soup with handmade fishballs.',
+    price: 4,
+    image: 'https://images.unsplash.com/photo-1618866734754-033010aa4de0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Soup Dishes',
     available: true
   },
   {
     id: '4',
-    name: 'Iced Teh Tarik',
-    description: 'Pulled milk tea served cold.',
-    price: 2.0,
-    image: 'https://images.unsplash.com/photo-1561504809-b9c78594de7f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    category: 'Beverages',
+    name: 'Laksa',
+    description: 'Spicy noodle soup with coconut milk, prawns, and fish cake.',
+    price: 6,
+    image: 'https://images.unsplash.com/photo-1583947582893-604451e5e3d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    category: 'Noodle Dishes',
     available: true
   }
 ];
@@ -79,22 +73,7 @@ const MenuEditor = () => {
   const [originalItem, setOriginalItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  
-  // Group menu items by category
-  const categorizedItems: MenuCategoryGroup[] = React.useMemo(() => {
-    const categories: { [key: string]: MenuItem[] } = {};
-    menuItems.forEach(item => {
-      if (!categories[item.category]) {
-        categories[item.category] = [];
-      }
-      categories[item.category].push(item);
-    });
-    
-    return Object.keys(categories).map(name => ({
-      name,
-      items: categories[name]
-    }));
-  }, [menuItems]);
+  const [showPreview, setShowPreview] = useState(false);
   
   useEffect(() => {
     if (!authLoading && !user) {
@@ -109,7 +88,7 @@ const MenuEditor = () => {
       description: '',
       price: 0,
       image: '',
-      category: 'Main Dishes',
+      category: 'Noodle Dishes',
       available: true
     };
     setEditingItem(newItem);
@@ -262,6 +241,73 @@ const MenuEditor = () => {
 
   const canSave = editingItem && hasChanges;
 
+  if (showPreview) {
+    return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Customer Preview</h1>
+          <Button variant="outline" onClick={() => setShowPreview(false)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Editor
+          </Button>
+        </div>
+        
+        <div className="mb-8">
+          <Card className="overflow-hidden">
+            <div className="h-48 bg-muted relative">
+              <img 
+                src="https://images.unsplash.com/photo-1526318896980-cf78c088247c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+                alt="Chinese Noodle Stall" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                <div className="p-4 text-white">
+                  <h2 className="text-2xl font-bold">{user.stallName}</h2>
+                  <p className="text-sm opacity-90">{user.stallAddress}</p>
+                </div>
+              </div>
+            </div>
+            <CardContent className="p-4">
+              <p className="text-muted-foreground">{user.stallDescription}</p>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold">Menu Items</h2>
+          
+          <div className="grid gap-4 sm:grid-cols-2">
+            {menuItems.filter(item => item.available).map(item => (
+              <Card key={item.id} className="overflow-hidden">
+                {item.image && (
+                  <div className="h-40 overflow-hidden">
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-medium text-lg">{item.name}</h3>
+                    <span className="font-bold">S${item.price.toFixed(2)}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                  <div className="mt-4 flex items-center">
+                    <Button variant="outline" size="sm" className="w-full">
+                      + Add to cart
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
@@ -288,6 +334,13 @@ const MenuEditor = () => {
             Back to Dashboard
           </Button>
           <Button
+            variant="outline"
+            onClick={() => setShowPreview(true)}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Preview
+          </Button>
+          <Button
             onClick={handleAddNewItem}
             disabled={!!editingItem}
           >
@@ -309,65 +362,39 @@ const MenuEditor = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue={categorizedItems.length > 0 ? categorizedItems[0].name : ""}>
-                  <TabsList className="mb-4 w-full flex overflow-x-auto">
-                    {categorizedItems.map(category => (
-                      <TabsTrigger 
-                        key={category.name} 
-                        value={category.name}
-                        className="flex-shrink-0"
+                <div className="space-y-4">
+                  {menuItems.map(item => (
+                    <div 
+                      key={item.id}
+                      className={`p-4 border rounded-lg flex items-center cursor-pointer transition-colors
+                        ${editingItem?.id === item.id ? 'border-primary bg-primary/5' : 
+                          'hover:bg-muted/50'} 
+                        ${!item.available ? 'opacity-60' : ''}
+                      `}
+                      onClick={() => handleEditItem(item)}
+                    >
+                      <div 
+                        className="w-16 h-16 rounded-md bg-muted flex-shrink-0 overflow-hidden mr-4"
+                        style={{ backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url(${item.image})` }}
                       >
-                        {category.name}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  
-                  {categorizedItems.map(category => (
-                    <TabsContent key={category.name} value={category.name} className="m-0">
-                      {category.items.length === 0 ? (
-                        <div className="text-center py-6 text-muted-foreground">
-                          No items in this category
+                        {!item.image && <ImageIcon className="w-full h-full p-4 text-muted-foreground" />}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{item.name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {item.description.substring(0, 60)}{item.description.length > 60 ? '...' : ''}
+                        </p>
+                        <div className="flex items-center mt-1">
+                          <span className="text-sm font-medium">S${item.price.toFixed(2)}</span>
+                          <span className={`ml-3 text-xs px-2 py-0.5 rounded-full ${item.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {item.available ? 'Available' : 'Unavailable'}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {category.items.map(item => (
-                            <div 
-                              key={item.id}
-                              className={`p-4 border rounded-lg flex items-center cursor-pointer transition-colors
-                                ${editingItem?.id === item.id ? 'border-primary bg-primary/5' : 
-                                  'hover:bg-muted/50'} 
-                                ${!item.available ? 'opacity-60' : ''}
-                              `}
-                              onClick={() => handleEditItem(item)}
-                            >
-                              <div 
-                                className="w-16 h-16 rounded-md bg-muted flex-shrink-0 overflow-hidden mr-4"
-                                style={{ backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url(${item.image})` }}
-                              >
-                                {!item.image && <ImageIcon className="w-full h-full p-4 text-muted-foreground" />}
-                              </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-medium truncate">{item.name}</h3>
-                                <p className="text-sm text-muted-foreground truncate">
-                                  {item.description.substring(0, 60)}{item.description.length > 60 ? '...' : ''}
-                                </p>
-                                <div className="flex items-center mt-1">
-                                  <span className="text-sm font-medium">S${item.price.toFixed(2)}</span>
-                                  <span className={`ml-3 text-xs px-2 py-0.5 rounded-full ${item.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                    {item.available ? 'Available' : 'Unavailable'}
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              <ChevronRight className="h-5 w-5 text-muted-foreground ml-2" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </TabsContent>
+                      </div>
+                    </div>
                   ))}
-                </Tabs>
+                </div>
               </CardContent>
             </Card>
           </AnimatedTransition>
@@ -394,7 +421,7 @@ const MenuEditor = () => {
                       name="name"
                       value={editingItem.name}
                       onChange={handleInputChange}
-                      placeholder="Chicken Rice"
+                      placeholder="Fishball Noodles"
                       disabled={isSubmitting}
                     />
                   </div>
@@ -406,7 +433,7 @@ const MenuEditor = () => {
                       name="description"
                       value={editingItem.description}
                       onChange={handleInputChange}
-                      placeholder="Delicious chicken rice with fragrant rice and fresh chicken..."
+                      placeholder="Delicious noodles with handmade fishballs..."
                       rows={3}
                       disabled={isSubmitting}
                     />
@@ -443,10 +470,10 @@ const MenuEditor = () => {
                           className="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={isSubmitting}
                         >
-                          <option value="Main Dishes">Main Dishes</option>
+                          <option value="Noodle Dishes">Noodle Dishes</option>
+                          <option value="Soup Dishes">Soup Dishes</option>
                           <option value="Side Dishes">Side Dishes</option>
                           <option value="Beverages">Beverages</option>
-                          <option value="Desserts">Desserts</option>
                         </select>
                       </div>
                     </div>

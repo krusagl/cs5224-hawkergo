@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   QrCode, ArrowLeft, Clock, CheckCircle, 
-  BellRing, Search, Filter, ChevronDown
+  BellRing, Search, Filter, ChevronDown,
+  LayoutDashboard, ToggleLeft
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
@@ -48,9 +49,10 @@ const OperationMode = () => {
       const statusPriority = {
         pending: 0,
         preparing: 1,
-        ready: 2,
-        completed: 3,
-        cancelled: 4
+        scheduled: 2,
+        ready: 3,
+        completed: 4,
+        cancelled: 5
       };
       
       const priorityDiff = (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99);
@@ -100,6 +102,7 @@ const OperationMode = () => {
       case 'pending': return 'preparing';
       case 'preparing': return 'ready';
       case 'ready': return 'completed';
+      case 'scheduled': return 'preparing';
       default: return currentStatus;
     }
   };
@@ -110,6 +113,7 @@ const OperationMode = () => {
       case 'pending': return 'Start Preparing';
       case 'preparing': return 'Mark Ready';
       case 'ready': return 'Complete Order';
+      case 'scheduled': return 'Start Preparing';
       default: return 'Update Status';
     }
   };
@@ -121,6 +125,8 @@ const OperationMode = () => {
         return 'bg-orange-100 text-orange-800';
       case 'preparing':
         return 'bg-blue-100 text-blue-800';
+      case 'scheduled':
+        return 'bg-purple-100 text-purple-800';
       case 'ready':
         return 'bg-green-100 text-green-800';
       case 'completed':
@@ -177,6 +183,15 @@ const OperationMode = () => {
         
         <AnimatedTransition className="mt-4 md:mt-0 w-full md:w-auto">
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <Button 
+              onClick={() => navigate('/hawker/dashboard')}
+              className="w-full sm:w-auto flex items-center gap-2"
+              size="lg"
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              <span>Operation Mode</span>
+              <ToggleLeft className="ml-1 h-5 w-5 text-muted-foreground" />
+            </Button>
             <Button 
               variant="outline" 
               onClick={() => setShowQRCode(true)}
@@ -382,7 +397,7 @@ const OperationMode = () => {
                               variant="ghost"
                               className="w-full text-muted-foreground"
                             >
-                              Cancel Order
+                              Cancel & Refund Order
                             </Button>
                           )}
                         </div>

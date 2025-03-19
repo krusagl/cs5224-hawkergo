@@ -30,7 +30,7 @@ const Login = () => {
         presetPassword = 'admin123';
       }
       
-      await login(presetEmail, presetPassword);
+      await login(presetEmail, presetPassword, preset);
       toast({
         title: 'Success',
         description: `Logged in as ${preset} account. Redirecting to dashboard...`,
@@ -155,6 +155,14 @@ const Login = () => {
                   </Button>
                 </div>
               </div>
+              
+              <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+                <h3 className="font-medium text-sm">Chinese Noodles Stall Owner</h3>
+                <p className="text-xs text-muted-foreground">
+                  Log in as a Chinese noodles stall owner to manage your menu items, 
+                  track orders, and view sales analytics.
+                </p>
+              </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button
@@ -165,15 +173,6 @@ const Login = () => {
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
-              <div className="text-center text-sm">
-                Don't have an account?{' '}
-                <Link
-                  to="/hawker/register"
-                  className="text-primary hover:underline"
-                >
-                  Sign up
-                </Link>
-              </div>
             </CardFooter>
           </form>
         </Card>
