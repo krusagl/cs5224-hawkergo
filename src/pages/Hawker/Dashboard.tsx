@@ -16,7 +16,8 @@ import {
   LayoutDashboard,
   ToggleRight,
   ArrowRight,
-  Lock
+  Lock,
+  CheckCircle
 } from 'lucide-react';
 import { format, subDays, startOfDay, addDays } from 'date-fns';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps, ReferenceLine } from 'recharts';
