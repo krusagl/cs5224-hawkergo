@@ -124,7 +124,6 @@ const CustomerMenu = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Menu Items */}
         <div className="md:col-span-2">
           <ScrollArea className="h-[650px] rounded-md border">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
@@ -180,7 +179,6 @@ const CustomerMenu = () => {
           </ScrollArea>
         </div>
 
-        {/* Cart */}
         <div>
           <Card>
             <CardContent className="p-4">
