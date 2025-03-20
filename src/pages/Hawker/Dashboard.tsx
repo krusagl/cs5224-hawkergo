@@ -42,18 +42,31 @@ const generateSalesTrendData = (days: number = 7) => {
 };
 
 // Generate mock data for sales predictions
-const generateSalesPredictionData = (days: number = 7) => {
+const generateSalesPredictionData = (pastDays: number = 7, futureDays: number = 7) => {
   const today = new Date();
-  return Array.from({ length: days }).map((_, i) => {
-    const date = addDays(today, i);
+  // Past days + today
+  const pastData = Array.from({ length: pastDays + 1 }).map((_, i) => {
+    const date = subDays(today, pastDays - i);
     return {
       date: format(date, 'MMM dd'),
-      sales: i === 0 ? Math.floor(Math.random() * 300) + 100 : null,
-      predicted: Math.floor(Math.random() * 300) + 100,
-      orders: i === 0 ? Math.floor(Math.random() * 20) + 5 : null,
-      predictedOrders: Math.floor(Math.random() * 20) + 5,
+      sales: Math.floor(Math.random() * 300) + 100,
+      orders: Math.floor(Math.random() * 20) + 5,
+      isPast: true,
     };
   });
+  
+  // Future days
+  const futureData = Array.from({ length: futureDays }).map((_, i) => {
+    const date = addDays(today, i + 1);
+    return {
+      date: format(date, 'MMM dd'),
+      predicted: Math.floor(Math.random() * 300) + 100,
+      predictedOrders: Math.floor(Math.random() * 20) + 5,
+      isPast: false,
+    };
+  });
+  
+  return [...pastData, ...futureData];
 };
 
 const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
@@ -88,14 +101,18 @@ const Dashboard = () => {
   const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   
   // Combined data for sales trends and predictions
-  const [combinedSalesData, setCombinedSalesData] = useState(generateSalesPredictionData(14));
+  const [combinedSalesData, setCombinedSalesData] = useState(generateSalesPredictionData(6, 7));
   
   // Update chart data when time range changes
   useEffect(() => {
-    let days = 7;
-    if (timeRange === '30d') days = 30;
+    let pastDays = 6;
+    let futureDays = 7;
+    if (timeRange === '30d') {
+      pastDays = 20;
+      futureDays = 10;
+    }
     
-    setCombinedSalesData(generateSalesPredictionData(days));
+    setCombinedSalesData(generateSalesPredictionData(pastDays, futureDays));
   }, [timeRange]);
 
   useEffect(() => {
@@ -117,12 +134,26 @@ const Dashboard = () => {
   const preparingOrders = orders.filter(order => order.status === 'preparing');
   const readyOrders = orders.filter(order => order.status === 'ready');
   const completedOrders = orders.filter(order => order.status === 'completed');
-  const scheduledOrders = orders.filter(order => order.status === 'scheduled');
   const cancelledOrders = orders.filter(order => order.status === 'cancelled');
   
-  const recentTransactions = [...orders]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 3);
+  // Get recent transactions for each status - limited to 3 per status
+  const recentPendingOrders = pendingOrders.slice(0, 3);
+  const recentPreparingOrders = preparingOrders.slice(0, 3);
+  const recentReadyOrders = readyOrders.slice(0, 3);
+  const recentCompletedOrders = completedOrders.slice(0, 3);
+  const recentCancelledOrders = cancelledOrders.slice(0, 3);
+  
+  // Get recent transactions based on tab value
+  const getRecentTransactionsByStatus = (status: string) => {
+    switch(status) {
+      case 'pending': return recentPendingOrders;
+      case 'preparing': return recentPreparingOrders;
+      case 'ready': return recentReadyOrders;
+      case 'completed': return recentCompletedOrders;
+      case 'cancelled': return recentCancelledOrders;
+      default: return recentPendingOrders;
+    }
+  };
   
   const uniqueMenuItemIds = [...new Set(orders.flatMap(order => order.items.map(item => item.menuItemId)))];
   const stallUrl = `${window.location.origin}/stall/${user?.id}`;
@@ -334,30 +365,27 @@ const Dashboard = () => {
                 <TabsList className="mb-4">
                   <TabsTrigger value="pending">Pending ({pendingOrders.length})</TabsTrigger>
                   <TabsTrigger value="preparing">Preparing ({preparingOrders.length})</TabsTrigger>
-                  <TabsTrigger value="scheduled">Scheduled ({scheduledOrders.length})</TabsTrigger>
+                  <TabsTrigger value="ready">Ready ({readyOrders.length})</TabsTrigger>
                   <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
                   <TabsTrigger value="completed">Completed ({completedOrders.length})</TabsTrigger>
                 </TabsList>
                 
-                {['pending', 'preparing', 'scheduled', 'cancelled', 'completed'].map((status) => (
+                {['pending', 'preparing', 'ready', 'cancelled', 'completed'].map((status) => (
                   <TabsContent key={status} value={status} className="m-0">
-                    {orders.filter(o => o.status === status).length === 0 ? (
+                    {getRecentTransactionsByStatus(status).length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground">
                         No {status} orders
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {recentTransactions
-                          .filter(o => o.status === status)
-                          .map((order) => (
-                            <div key={order.id} className="flex flex-col sm:flex-row gap-4">
-                              <OrderCard 
-                                order={order} 
-                                onUpdateStatus={updateOrderStatus}
-                              />
-                            </div>
-                          ))
-                        }
+                        {getRecentTransactionsByStatus(status).map((order) => (
+                          <div key={order.id} className="flex flex-col sm:flex-row gap-4">
+                            <OrderCard 
+                              order={order} 
+                              onUpdateStatus={updateOrderStatus}
+                            />
+                          </div>
+                        ))}
                         
                         <Button
                           variant="outline"
@@ -499,15 +527,15 @@ const Dashboard = () => {
                 <div className="text-muted-foreground">
                   <span className="font-medium">Past 7 days:</span> {
                     chartType === 'revenue' 
-                      ? `S$${combinedSalesData.slice(0, 7).reduce((acc, curr) => acc + (curr.sales || 0), 0).toFixed(2)}`
-                      : `${combinedSalesData.slice(0, 7).reduce((acc, curr) => acc + (curr.orders || 0), 0)} orders`
+                      ? `S$${combinedSalesData.filter(d => d.isPast).reduce((acc, curr) => acc + (curr.sales || 0), 0).toFixed(2)}`
+                      : `${combinedSalesData.filter(d => d.isPast).reduce((acc, curr) => acc + (curr.orders || 0), 0)} orders`
                   }
                 </div>
                 <div className="text-muted-foreground">
                   <span className="font-medium">Predicted 7 days:</span> {
                     chartType === 'revenue' 
-                      ? `S$${combinedSalesData.slice(7, 14).reduce((acc, curr) => acc + (curr.predicted || 0), 0).toFixed(2)}`
-                      : `${combinedSalesData.slice(7, 14).reduce((acc, curr) => acc + (curr.predictedOrders || 0), 0)} orders`
+                      ? `S$${combinedSalesData.filter(d => !d.isPast).reduce((acc, curr) => acc + (curr.predicted || 0), 0).toFixed(2)}`
+                      : `${combinedSalesData.filter(d => !d.isPast).reduce((acc, curr) => acc + (curr.predictedOrders || 0), 0)} orders`
                   }
                 </div>
                 <Button 
