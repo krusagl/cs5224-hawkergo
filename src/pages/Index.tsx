@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -114,17 +113,18 @@ const Index = () => {
                 </div>
               </div>
             </AnimatedTransition>
-            
-            <AnimatedTransition delay={0.2}>
-              <div className="rounded-lg overflow-hidden shadow-xl">
-                <img 
-                  src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1300&auto=format&fit=crop"
-                  alt="Food Hawker Center" 
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            </AnimatedTransition>
           </div>
+        </div>
+      </section>
+      
+      {/* Full-width Singapore Food Image */}
+      <section className="w-full">
+        <div className="w-full h-[400px] md:h-[500px] overflow-hidden">
+          <img 
+            src="https://images.unsplash.com/photo-1560620884-8fe0435b14c9?q=80&w=1300&auto=format&fit=crop"
+            alt="Singapore Hawker Food" 
+            className="w-full h-full object-cover"
+          />
         </div>
       </section>
       

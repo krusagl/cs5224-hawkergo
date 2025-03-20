@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress'; 
 import { 
   BarChart2, 
   QrCode, 
@@ -16,7 +17,8 @@ import {
   ToggleRight,
   ArrowRight,
   Lock,
-  CheckCircle
+  CheckCircle,
+  Info
 } from 'lucide-react';
 import { format, subDays, startOfDay, addDays } from 'date-fns';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps, ReferenceLine } from 'recharts';
@@ -154,6 +156,29 @@ const Dashboard = () => {
     }
   };
   
+  // Billing information
+  const currentMonthTransactions = 1250; // Mock value in SGD
+  const freeThreshold = 2000; // Free tier threshold in SGD
+  const percentageUsed = (currentMonthTransactions / freeThreshold) * 100;
+  const remainingFree = freeThreshold - currentMonthTransactions;
+  
+  // Calculate past/future sales data safely with type checking
+  const pastTotalSales = combinedSalesData
+    .filter(d => d.isPast)
+    .reduce((acc, curr) => acc + (('sales' in curr) ? Number(curr.sales) : 0), 0);
+
+  const pastTotalOrders = combinedSalesData
+    .filter(d => d.isPast)
+    .reduce((acc, curr) => acc + (('orders' in curr) ? Number(curr.orders) : 0), 0);
+
+  const predictedTotalSales = combinedSalesData
+    .filter(d => !d.isPast)
+    .reduce((acc, curr) => acc + (('predicted' in curr) ? Number(curr.predicted) : 0), 0);
+
+  const predictedTotalOrders = combinedSalesData
+    .filter(d => !d.isPast)
+    .reduce((acc, curr) => acc + (('predictedOrders' in curr) ? Number(curr.predictedOrders) : 0), 0);
+
   const uniqueMenuItemIds = [...new Set(orders.flatMap(order => order.items.map(item => item.menuItemId)))];
   const stallUrl = `${window.location.origin}/stall/${user?.id}`;
 
@@ -174,23 +199,6 @@ const Dashboard = () => {
 
   if (!user) return null;
 
-  // Fix for TypeScript type errors: safely calculate sums with appropriate type checking
-  const pastTotalSales = combinedSalesData
-    .filter(d => d.isPast)
-    .reduce((acc, curr) => acc + (('sales' in curr) ? curr.sales : 0), 0);
-
-  const pastTotalOrders = combinedSalesData
-    .filter(d => d.isPast)
-    .reduce((acc, curr) => acc + (('orders' in curr) ? curr.orders : 0), 0);
-
-  const predictedTotalSales = combinedSalesData
-    .filter(d => !d.isPast)
-    .reduce((acc, curr) => acc + (('predicted' in curr) ? curr.predicted : 0), 0);
-
-  const predictedTotalOrders = combinedSalesData
-    .filter(d => !d.isPast)
-    .reduce((acc, curr) => acc + (('predictedOrders' in curr) ? curr.predictedOrders : 0), 0);
-
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
       {/* Header Section */}
@@ -204,15 +212,6 @@ const Dashboard = () => {
         
         <AnimatedTransition className="mt-4 md:mt-0 w-full md:w-auto">
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <Button 
-              onClick={() => navigate('/hawker/operation-mode')}
-              className="w-full sm:w-auto flex items-center gap-2"
-              size="lg"
-            >
-              <LayoutDashboard className="h-5 w-5" />
-              <span>Dashboard Mode</span>
-              <ToggleRight className="ml-1 h-5 w-5 text-muted-foreground" />
-            </Button>
             <Button
               variant="outline"
               onClick={() => setShowQRCode(true)}
@@ -309,6 +308,46 @@ const Dashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Billing Information Card */}
+      <AnimatedTransition delay={0.1}>
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-semibold">Billing Information</CardTitle>
+            <CardDescription>Free tier usage for the current month</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <span className="text-sm text-muted-foreground">Current month transactions:</span>
+                  <span className="ml-2 font-bold">S${currentMonthTransactions.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Free tier threshold:</span>
+                  <span className="ml-2 font-bold">S${freeThreshold.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Remaining free:</span>
+                  <span className="ml-2 font-bold text-green-600">S${remainingFree.toFixed(2)}</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Usage</span>
+                  <span>{percentageUsed.toFixed(1)}%</span>
+                </div>
+                <Progress value={percentageUsed} className="h-2" />
+                <div className="flex items-center text-xs text-muted-foreground">
+                  <Info className="h-3 w-3 mr-1" />
+                  <span>Transactions exceeding S$2,000 will incur a 0.5% transaction fee</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </AnimatedTransition>
 
       {/* Main Dashboard Layout */}
       <div className="grid grid-cols-1 gap-6">
