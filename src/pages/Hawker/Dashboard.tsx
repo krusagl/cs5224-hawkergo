@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -174,6 +173,23 @@ const Dashboard = () => {
   }
 
   if (!user) return null;
+
+  // Fix for TypeScript type errors: safely calculate sums with appropriate type checking
+  const pastTotalSales = combinedSalesData
+    .filter(d => d.isPast)
+    .reduce((acc, curr) => acc + (('sales' in curr) ? curr.sales : 0), 0);
+
+  const pastTotalOrders = combinedSalesData
+    .filter(d => d.isPast)
+    .reduce((acc, curr) => acc + (('orders' in curr) ? curr.orders : 0), 0);
+
+  const predictedTotalSales = combinedSalesData
+    .filter(d => !d.isPast)
+    .reduce((acc, curr) => acc + (('predicted' in curr) ? curr.predicted : 0), 0);
+
+  const predictedTotalOrders = combinedSalesData
+    .filter(d => !d.isPast)
+    .reduce((acc, curr) => acc + (('predictedOrders' in curr) ? curr.predictedOrders : 0), 0);
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
@@ -527,15 +543,15 @@ const Dashboard = () => {
                 <div className="text-muted-foreground">
                   <span className="font-medium">Past 7 days:</span> {
                     chartType === 'revenue' 
-                      ? `S$${combinedSalesData.filter(d => d.isPast).reduce((acc, curr) => acc + (curr.sales || 0), 0).toFixed(2)}`
-                      : `${combinedSalesData.filter(d => d.isPast).reduce((acc, curr) => acc + (curr.orders || 0), 0)} orders`
+                      ? `S$${pastTotalSales.toFixed(2)}`
+                      : `${pastTotalOrders} orders`
                   }
                 </div>
                 <div className="text-muted-foreground">
                   <span className="font-medium">Predicted 7 days:</span> {
                     chartType === 'revenue' 
-                      ? `S$${combinedSalesData.filter(d => !d.isPast).reduce((acc, curr) => acc + (curr.predicted || 0), 0).toFixed(2)}`
-                      : `${combinedSalesData.filter(d => !d.isPast).reduce((acc, curr) => acc + (curr.predictedOrders || 0), 0)} orders`
+                      ? `S$${predictedTotalSales.toFixed(2)}`
+                      : `${predictedTotalOrders} orders`
                   }
                 </div>
                 <Button 
