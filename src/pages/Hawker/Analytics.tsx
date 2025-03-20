@@ -14,7 +14,10 @@ import {
   DollarSign,
   Clock,
   LayoutGrid,
-  LayoutList
+  LayoutList,
+  Lock,
+  TrendingUp,
+  ArrowRight
 } from 'lucide-react';
 import { addDays, format } from 'date-fns';
 import { 
@@ -105,22 +108,51 @@ const generateItemPerformanceData = () => {
   });
 };
 
+// Generate AI demand analysis data
+const generateAIDemandAnalysisData = () => {
+  return menuItems.map(item => {
+    // Generate next 15 days of demand predictions (3 meals per day)
+    const mealDemand = Array.from({ length: 45 }).map((_, i) => {
+      const day = Math.floor(i / 3) + 1;
+      const mealIndex = i % 3;
+      const mealType = ['Breakfast', 'Lunch', 'Dinner'][mealIndex];
+      const demand = Math.floor(Math.random() * 10) + 
+                    (mealType === 'Lunch' ? 15 : mealType === 'Dinner' ? 12 : 8);
+      
+      return {
+        day,
+        meal: mealType,
+        demand
+      };
+    });
+    
+    return {
+      id: item.id,
+      name: item.name,
+      totalPredictedDemand: mealDemand.reduce((sum, meal) => sum + meal.demand, 0),
+      averageDailyDemand: (mealDemand.reduce((sum, meal) => sum + meal.demand, 0) / 15).toFixed(1),
+      mealDemand
+    };
+  });
+};
+
 const Analytics = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'day' | 'item'>('day');
+  const [isPremium, setIsPremium] = useState(false);
+  const [showAIAnalysisPreview, setShowAIAnalysisPreview] = useState(false);
   
   // Generate mock data
   const dailySalesData = generateDailySalesData(14); // Next 7 days
   const itemPerformanceData = generateItemPerformanceData();
+  const aiDemandAnalysisData = generateAIDemandAnalysisData();
   
   // Usage statistics - for billing/free tier visualization
-  const usageStats = {
-    ordersProcessed: 127,
-    freeOrderLimit: 200,
-    percentageUsed: Math.round((127 / 200) * 100),
-    daysRemaining: 15,
-  };
+  const totalSalesThisMonth = 1850;
+  const freeTransactionLimit = 2000;
+  const percentageUsed = Math.round((totalSalesThisMonth / freeTransactionLimit) * 100);
+  const daysRemaining = 15;
 
   if (authLoading || !user) {
     return (
@@ -179,33 +211,46 @@ const Analytics = () => {
       <AnimatedTransition delay={0.1}>
         <Card className="mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Free Tier Usage</CardTitle>
-            <CardDescription>
-              Your current usage and limits for the free tier
-            </CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-lg">Free Tier Usage</CardTitle>
+                <CardDescription>
+                  Your current usage and limits for the free tier
+                </CardDescription>
+              </div>
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => setIsPremium(!isPremium)}
+              >
+                Upgrade to Premium
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="pb-6">
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">Orders processed this month:</span>
-                  <span className="font-medium">{usageStats.ordersProcessed} / {usageStats.freeOrderLimit}</span>
+                  <span className="text-muted-foreground">Transactions this month:</span>
+                  <span className="font-medium">S${totalSalesThisMonth} / S${freeTransactionLimit}</span>
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-primary rounded-full" 
-                    style={{ width: `${usageStats.percentageUsed}%` }}
+                    style={{ width: `${percentageUsed}%` }}
                   ></div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {usageStats.daysRemaining} days remaining in billing cycle
+                  {daysRemaining} days remaining in billing cycle
                 </p>
               </div>
               <div className="bg-muted/30 p-3 rounded-md text-sm flex items-start">
                 <Info className="h-4 w-4 mt-0.5 mr-2 text-muted-foreground flex-shrink-0" />
                 <p>
-                  You're on the Free Tier plan with a limit of {usageStats.freeOrderLimit} orders per month. 
-                  Upgrade to the Standard plan for unlimited orders and advanced analytics.
+                  You're on the Free Tier plan with no transaction fees for the first S$2,000 per month. 
+                  A 0.5% transaction fee applies for amounts exceeding S$2,000. 
+                  Upgrade to Premium for AI-powered demand analysis and additional features.
                 </p>
               </div>
             </div>
@@ -213,8 +258,177 @@ const Analytics = () => {
         </Card>
       </AnimatedTransition>
       
+      {/* AI-Powered Demand Analysis */}
+      <AnimatedTransition delay={0.2}>
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center">
+                  AI-Powered Demand Analysis
+                  {!isPremium && <Lock className="ml-2 h-4 w-4 text-muted-foreground" />}
+                </CardTitle>
+                <CardDescription>
+                  Forecasts of 5 dishes' demands for the next 45 meals (15 days)
+                </CardDescription>
+              </div>
+              {!isPremium && (
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  onClick={() => setIsPremium(true)}
+                >
+                  Unlock with Premium
+                </Button>
+              )}
+              {isPremium && (
+                <TooltipProvider>
+                  <TooltipUI>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <HelpCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs text-sm">
+                        Each summary costs S$25. The AI model analyzes your historical data, 
+                        seasonal patterns, and upcoming events to predict dish-specific demand.
+                      </p>
+                    </TooltipContent>
+                  </TooltipUI>
+                </TooltipProvider>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!isPremium ? (
+              <div className="relative bg-muted/20 rounded-md p-6 overflow-hidden">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <Lock className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">Premium Feature</h3>
+                  <p className="text-muted-foreground mb-4 max-w-md">
+                    Unlock AI-powered demand forecasting to predict which dishes will be popular 
+                    and how many of each to prepare for the next 15 days.
+                  </p>
+                  <Button 
+                    onClick={() => setIsPremium(true)}
+                    className="mb-2"
+                  >
+                    Upgrade to Premium
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAIAnalysisPreview(!showAIAnalysisPreview)}
+                  >
+                    {showAIAnalysisPreview ? 'Hide Preview' : 'See Preview'}
+                  </Button>
+                </div>
+                
+                {showAIAnalysisPreview && (
+                  <div className="mt-6 blur-sm pointer-events-none">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        {aiDemandAnalysisData.slice(0, 3).map(item => (
+                          <Card key={item.id} className="bg-card/80">
+                            <CardContent className="p-4">
+                              <h4 className="font-medium mb-2">{item.name}</h4>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-muted-foreground">Total demand:</span>
+                                <span className="font-medium">{item.totalPredictedDemand} orders</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Daily average:</span>
+                                <span className="font-medium">{item.averageDailyDemand} orders</span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                      
+                      <div className="h-[200px] bg-muted/30 rounded-md"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {aiDemandAnalysisData.slice(0, 5).map(item => (
+                    <Card key={item.id}>
+                      <CardContent className="p-4">
+                        <h4 className="font-medium mb-2">{item.name}</h4>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-muted-foreground">Total 15-day demand:</span>
+                          <span className="font-medium">{item.totalPredictedDemand} orders</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Daily average:</span>
+                          <span className="font-medium">{item.averageDailyDemand} orders</span>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-muted">
+                          <Button variant="outline" size="sm" className="w-full">
+                            View Detailed Forecast
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium mb-3">Meal-by-Meal Demand Forecast</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={aiDemandAnalysisData[0].mealDemand.slice(0, 15)}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                      <XAxis 
+                        dataKey="meal" 
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip />
+                      <Line 
+                        type="monotone" 
+                        dataKey="demand" 
+                        name="Predicted Demand" 
+                        stroke="#8884d8" 
+                        activeDot={{ r: 8 }} 
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  
+                  <div className="text-center text-sm text-muted-foreground mt-3">
+                    Showing first 15 meals (5 days) for {aiDemandAnalysisData[0].name}
+                  </div>
+                </div>
+                
+                <div className="bg-muted/30 p-4 rounded-md">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium">AI Summary Services</h4>
+                    <span className="text-sm font-medium">S$25 per summary</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Each AI-powered demand analysis summary forecasts 5 dishes' demands for 
+                    the next 45 meals (15 days). The summary is generated using advanced machine 
+                    learning models trained on historical data.
+                  </p>
+                  <Button className="w-full">
+                    Generate New Summary
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </AnimatedTransition>
+      
       {viewMode === 'day' ? (
-        <AnimatedTransition delay={0.2}>
+        <AnimatedTransition delay={0.3}>
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -383,7 +597,7 @@ const Analytics = () => {
           </Card>
         </AnimatedTransition>
       ) : (
-        <AnimatedTransition delay={0.2}>
+        <AnimatedTransition delay={0.3}>
           <div className="space-y-6">
             <Card>
               <CardHeader>

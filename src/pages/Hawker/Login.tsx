@@ -155,14 +155,6 @@ const Login = () => {
                   </Button>
                 </div>
               </div>
-              
-              <div className="space-y-2 border rounded-md p-3 bg-muted/30">
-                <h3 className="font-medium text-sm">Chinese Noodles Stall Owner</h3>
-                <p className="text-xs text-muted-foreground">
-                  Log in as a Chinese noodles stall owner to manage your menu items, 
-                  track orders, and view sales analytics.
-                </p>
-              </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button

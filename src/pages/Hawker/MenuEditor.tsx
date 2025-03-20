@@ -9,10 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Plus, Trash2, Save, ArrowLeft, Image as ImageIcon, 
-  DollarSign, Tag, Loader2, AlertCircle, Eye
+  DollarSign, Loader2, AlertCircle, Eye
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
+import { Switch } from '@/components/ui/switch';
 
 // Mock data for menu items
 interface MenuItem {
@@ -21,7 +22,6 @@ interface MenuItem {
   description: string;
   price: number;
   image: string;
-  category: string;
   available: boolean;
 }
 
@@ -33,7 +33,6 @@ const initialMenuItems: MenuItem[] = [
     description: 'Delicious noodles served with handmade fishballs in a savory broth.',
     price: 5,
     image: 'https://images.unsplash.com/photo-1573570095791-df66f86d5b58?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    category: 'Noodle Dishes',
     available: true
   },
   {
@@ -42,7 +41,6 @@ const initialMenuItems: MenuItem[] = [
     description: 'Minced pork noodles with black vinegar, chili, and various toppings.',
     price: 5,
     image: 'https://images.unsplash.com/photo-1626804475297-41608ea09aeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    category: 'Noodle Dishes',
     available: true
   },
   {
@@ -51,7 +49,6 @@ const initialMenuItems: MenuItem[] = [
     description: 'A light and tasty soup with handmade fishballs.',
     price: 4,
     image: 'https://images.unsplash.com/photo-1618866734754-033010aa4de0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    category: 'Soup Dishes',
     available: true
   },
   {
@@ -60,7 +57,6 @@ const initialMenuItems: MenuItem[] = [
     description: 'Spicy noodle soup with coconut milk, prawns, and fish cake.',
     price: 6,
     image: 'https://images.unsplash.com/photo-1583947582893-604451e5e3d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-    category: 'Noodle Dishes',
     available: true
   }
 ];
@@ -88,7 +84,6 @@ const MenuEditor = () => {
       description: '',
       price: 0,
       image: '',
-      category: 'Noodle Dishes',
       available: true
     };
     setEditingItem(newItem);
@@ -176,7 +171,7 @@ const MenuEditor = () => {
   };
   
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     if (!editingItem) return;
     
@@ -388,7 +383,7 @@ const MenuEditor = () => {
                         <div className="flex items-center mt-1">
                           <span className="text-sm font-medium">S${item.price.toFixed(2)}</span>
                           <span className={`ml-3 text-xs px-2 py-0.5 rounded-full ${item.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {item.available ? 'Available' : 'Unavailable'}
+                            {item.available ? 'Available' : 'Currently not available'}
                           </span>
                         </div>
                       </div>
@@ -439,43 +434,21 @@ const MenuEditor = () => {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Price (S$)</Label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="price"
-                          name="price"
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={editingItem.price}
-                          onChange={handleInputChange}
-                          className="pl-10"
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
-                      <div className="relative">
-                        <Tag className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <select
-                          id="category"
-                          name="category"
-                          value={editingItem.category}
-                          onChange={handleInputChange}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={isSubmitting}
-                        >
-                          <option value="Noodle Dishes">Noodle Dishes</option>
-                          <option value="Soup Dishes">Soup Dishes</option>
-                          <option value="Side Dishes">Side Dishes</option>
-                          <option value="Beverages">Beverages</option>
-                        </select>
-                      </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price (S$)</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="price"
+                        name="price"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={editingItem.price}
+                        onChange={handleInputChange}
+                        className="pl-10"
+                        disabled={isSubmitting}
+                      />
                     </div>
                   </div>
                   
@@ -511,16 +484,13 @@ const MenuEditor = () => {
                   </div>
                   
                   <div className="flex items-center space-x-2 pt-4">
-                    <input
-                      type="checkbox"
+                    <Switch
                       id="available"
-                      name="available"
                       checked={editingItem.available}
-                      onChange={() => setEditingItem({...editingItem, available: !editingItem.available})}
-                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                      onCheckedChange={(checked) => setEditingItem({...editingItem, available: checked})}
                     />
                     <Label htmlFor="available" className="cursor-pointer">
-                      This item is currently available for ordering
+                      {editingItem.available ? 'Available' : 'Currently not available'}
                     </Label>
                   </div>
                   

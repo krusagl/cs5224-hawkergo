@@ -1,93 +1,111 @@
 
+// Need to update the Operation Mode page according to requirements:
+// 1. Move completed orders to a separate tab 'Completed'
+// 2. Ensure orders don't change status unless marked as 'Completed'
+// 3. Use colors to differentiate action buttons 
+// 4. Allow filtering by order status
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
-  QrCode, ArrowLeft, Clock, CheckCircle, 
-  BellRing, Search, Filter, ChevronDown,
-  LayoutDashboard, ToggleLeft
+  ArrowLeft, 
+  Loader2,
+  Filter
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
+import OrderCard from '@/components/ui/OrderCard';
 import { useOrders, Order } from '@/hooks/useOrders';
-import { format, formatDistanceToNow } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+// Define a type for the order status to use for filtering
+type OrderStatus = 'all' | 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'scheduled';
 
 const OperationMode = () => {
   const { user, loading: authLoading } = useAuth();
   const { orders, loading: ordersLoading, updateOrderStatus } = useOrders();
   const navigate = useNavigate();
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<Order['status'] | 'all'>('all');
-  const [sortedOrders, setSortedOrders] = useState<Order[]>([]);
-
-  // Sort and filter orders
-  useEffect(() => {
-    let filtered = [...orders];
-    
-    // Apply status filter
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(order => order.status === filterStatus);
-    }
-    
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(order => 
-        order.customerName.toLowerCase().includes(query) ||
-        order.id.toLowerCase().includes(query) ||
-        order.items.some(item => item.name.toLowerCase().includes(query))
-      );
-    }
-    
-    // Sort orders by priority and time
-    filtered.sort((a, b) => {
-      // First sort by status priority
-      const statusPriority = {
-        pending: 0,
-        preparing: 1,
-        scheduled: 2,
-        ready: 3,
-        completed: 4,
-        cancelled: 5
-      };
-      
-      const priorityDiff = (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99);
-      if (priorityDiff !== 0) return priorityDiff;
-      
-      // Then sort by creation time (newest first)
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
-    
-    setSortedOrders(filtered);
-  }, [orders, filterStatus, searchQuery]);
-
+  const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
+  
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/hawker/login');
     }
   }, [authLoading, user, navigate]);
-
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
-    const result = await updateOrderStatus(orderId, newStatus);
+  
+  // Group orders by status
+  const pendingOrders = orders.filter(order => order.status === 'pending')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
-    if (result.success) {
-      toast({
-        title: 'Status Updated',
-        description: `Order has been marked as ${newStatus}`,
-      });
+  const preparingOrders = orders.filter(order => order.status === 'preparing')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+  const readyOrders = orders.filter(order => order.status === 'ready')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+  const completedOrders = orders.filter(order => order.status === 'completed')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+  const cancelledOrders = orders.filter(order => order.status === 'cancelled')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+  const scheduledOrders = orders.filter(order => order.status === 'scheduled')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  
+  // Filter orders based on the selected status
+  const getFilteredOrders = (status: string) => {
+    if (statusFilter === 'all') {
+      return status === 'pending' ? pendingOrders :
+             status === 'preparing' ? preparingOrders :
+             status === 'ready' ? readyOrders :
+             status === 'completed' ? completedOrders :
+             status === 'cancelled' ? cancelledOrders : scheduledOrders;
+    }
+    
+    return status === statusFilter ? (
+      status === 'pending' ? pendingOrders :
+      status === 'preparing' ? preparingOrders :
+      status === 'ready' ? readyOrders :
+      status === 'completed' ? completedOrders :
+      status === 'cancelled' ? cancelledOrders : scheduledOrders
+    ) : [];
+  };
+  
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    try {
+      // Only allow status changes when marking as completed
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
       
-      // If status is changed to ready, show a mock notification to customer
-      if (newStatus === 'ready') {
+      // Don't process if the new status isn't 'completed' and the current status isn't 'ready'
+      if (newStatus !== 'completed' && order.status === 'completed') {
         toast({
-          title: 'Customer Notified',
-          description: 'Customer has been notified that their order is ready for collection',
+          title: 'Cannot change status',
+          description: 'Completed orders cannot be changed to another status',
+          variant: 'destructive',
         });
+        return;
       }
-    } else {
+      
+      await updateOrderStatus(orderId, newStatus);
+      
+      toast({
+        title: 'Order Updated',
+        description: `Order status changed to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating order status:', error);
       toast({
         title: 'Error',
         description: 'Failed to update order status',
@@ -96,320 +114,173 @@ const OperationMode = () => {
     }
   };
   
-  // Get the next status based on current status
-  const getNextStatus = (currentStatus: Order['status']): Order['status'] => {
-    switch (currentStatus) {
-      case 'pending': return 'preparing';
-      case 'preparing': return 'ready';
-      case 'ready': return 'completed';
-      case 'scheduled': return 'preparing';
-      default: return currentStatus;
-    }
-  };
-  
-  // Get appropriate action button text based on status
-  const getActionButtonText = (status: Order['status']) => {
-    switch (status) {
-      case 'pending': return 'Start Preparing';
-      case 'preparing': return 'Mark Ready';
-      case 'ready': return 'Complete Order';
-      case 'scheduled': return 'Start Preparing';
-      default: return 'Update Status';
-    }
-  };
-  
-  // Get appropriate status badge style
-  const getStatusBadgeStyle = (status: Order['status']) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-orange-100 text-orange-800';
-      case 'preparing':
-        return 'bg-blue-100 text-blue-800';
-      case 'scheduled':
-        return 'bg-purple-100 text-purple-800';
-      case 'ready':
-        return 'bg-green-100 text-green-800';
-      case 'completed':
-        return 'bg-gray-100 text-gray-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-  
-  // Calculate elapsed time from order creation
-  const getElapsedTime = (createdAt: string) => {
-    try {
-      return formatDistanceToNow(new Date(createdAt), { addSuffix: true });
-    } catch (error) {
-      return 'Unknown time';
-    }
-  };
-  
-  const stallUrl = user ? `${window.location.origin}/stall/${user.id}` : '';
-
   if (authLoading || ordersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-gray-200 mb-4"></div>
-          <div className="h-4 w-32 bg-gray-200 rounded"></div>
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading...</span>
         </div>
       </div>
     );
   }
-
+  
   if (!user) return null;
-
+  
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
-        <AnimatedTransition>
-          <div>
-            <Button
-              variant="ghost"
-              className="-ml-3 mb-2"
-              onClick={() => navigate('/hawker/dashboard')}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-            <h1 className="text-3xl font-bold tracking-tight">Operation Mode</h1>
-            <p className="text-muted-foreground mt-1">Manage incoming orders and track transactions</p>
-          </div>
-        </AnimatedTransition>
-        
-        <AnimatedTransition className="mt-4 md:mt-0 w-full md:w-auto">
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <Button 
-              onClick={() => navigate('/hawker/dashboard')}
-              className="w-full sm:w-auto flex items-center gap-2"
-              size="lg"
-            >
-              <LayoutDashboard className="h-5 w-5" />
-              <span>Operation Mode</span>
-              <ToggleLeft className="ml-1 h-5 w-5 text-muted-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowQRCode(true)}
-              className="w-full sm:w-auto"
-            >
-              <QrCode className="mr-2 h-4 w-4" />
-              Display QR Code
-            </Button>
-          </div>
-        </AnimatedTransition>
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            className="-ml-3 mr-2"
+            onClick={() => navigate('/hawker/dashboard')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <h1 className="text-2xl font-bold">Operation Mode</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Filter: {statusFilter === 'all' ? 'All Orders' : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Orders`}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioGroup value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus)}>
+                <DropdownMenuRadioItem value="all">All Orders</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="pending">Pending Orders</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="preparing">Preparing Orders</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="ready">Ready Orders</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="completed">Completed Orders</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="cancelled">Cancelled Orders</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="scheduled">Scheduled Orders</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       
-      {/* QR Code Modal */}
-      {showQRCode && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4">Your Stall QR Code</h2>
-            <p className="text-muted-foreground mb-4">
-              Display this QR code at your stall for customers to scan and place orders.
-            </p>
-            <div className="flex justify-center mb-4">
-              <div className="bg-white p-4 rounded-lg shadow">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(stallUrl)}`} 
-                  alt="QR Code" 
-                  className="w-40 h-40"
-                />
-                <p className="text-center mt-2 text-sm font-medium">{user.stallName}</p>
-              </div>
-            </div>
-            <Button
-              variant="default"
-              className="w-full"
-              onClick={() => setShowQRCode(false)}
-            >
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      {/* Search and Filter Bar */}
-      <AnimatedTransition delay={0.1}>
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by customer name or order ID..."
-                  className="pl-10 w-full"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <div className="relative">
-                  <Button 
-                    variant="outline"
-                    className="flex items-center gap-2 min-w-[140px] justify-between"
-                    onClick={() => setFilterStatus(filterStatus === 'all' ? 'pending' : 'all')}
-                  >
-                    <Filter className="h-4 w-4" />
-                    <span>
-                      {filterStatus === 'all' ? 'All Orders' : 
-                        filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
-                    </span>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </AnimatedTransition>
-      
-      {/* Orders List */}
-      <AnimatedTransition delay={0.2}>
-        <div className="space-y-4">
-          {sortedOrders.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                <BellRing className="h-10 w-10 text-muted-foreground" />
-              </div>
-              <h3 className="mt-4 text-lg font-medium">No Orders Found</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                No orders match your current filters. Try changing your search or filter settings.
-              </p>
-              {filterStatus !== 'all' && (
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setFilterStatus('all')}
-                >
-                  Show All Orders
-                </Button>
-              )}
-            </div>
-          ) : (
-            sortedOrders.map((order) => {
-              const isPriority = order.status === 'pending' || order.status === 'preparing';
-              const isCompleted = order.status === 'completed' || order.status === 'cancelled';
-              return (
-                <Card 
-                  key={order.id}
-                  className={`${isPriority ? 'border-primary/30 shadow-md' : ''} 
-                    ${isCompleted ? 'opacity-60' : ''}`}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                      {/* Order Info */}
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold text-lg flex items-center">
-                              {order.customerName}
-                              {isPriority && (
-                                <span className="ml-2 inline-flex h-2 w-2 rounded-full bg-primary"></span>
-                              )}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              Order #{order.id} • {format(new Date(order.createdAt), 'MMM d, h:mm a')}
-                            </p>
-                          </div>
-                          
-                          <span className={`text-xs px-3 py-1 rounded-full ${getStatusBadgeStyle(order.status)}`}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                          </span>
-                        </div>
-                        
-                        <div className="mt-4 space-y-2 border-t pt-4">
-                          <div className="flex justify-between text-sm font-medium">
-                            <span>Items</span>
-                            <span>Quantity</span>
-                          </div>
-                          
-                          {order.items.map((item, index) => (
-                            <div key={index} className="flex justify-between text-sm">
-                              <span>{item.name}</span>
-                              <span className="font-medium">{item.quantity}x</span>
-                            </div>
-                          ))}
-                          
-                          {order.items.some(item => item.specialInstructions) && (
-                            <div className="text-sm mt-2 pt-2 border-t border-dashed">
-                              <p className="font-medium">Special Instructions:</p>
-                              {order.items
-                                .filter(item => item.specialInstructions)
-                                .map((item, index) => (
-                                  <p key={index} className="text-muted-foreground">
-                                    <span className="font-medium">{item.name}:</span> {item.specialInstructions}
-                                  </p>
-                                ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Order Status and Actions */}
-                      <div className="md:w-72 flex flex-col justify-between border-t pt-4 md:pt-0 md:border-t-0 md:border-l md:pl-6">
-                        <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium">Total Amount:</span>
-                            <span className="font-bold">S${order.totalAmount.toFixed(2)}</span>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium">Payment Status:</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                              {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-sm font-medium">Elapsed Time:</span>
-                            <span className="text-sm flex items-center">
-                              <Clock className="h-3 w-3 mr-1 text-muted-foreground" />
-                              {getElapsedTime(order.createdAt)}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2 mt-4">
-                          {order.status !== 'completed' && order.status !== 'cancelled' && (
-                            <Button
-                              onClick={() => handleUpdateOrderStatus(order.id, getNextStatus(order.status))}
-                              className="w-full"
-                              variant={order.status === 'ready' ? "outline" : "default"}
-                            >
-                              {order.status === 'ready' ? (
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                              ) : (
-                                <BellRing className="mr-2 h-4 w-4" />
-                              )}
-                              {getActionButtonText(order.status)}
-                            </Button>
-                          )}
-                          
-                          {order.status !== 'cancelled' && order.status !== 'completed' && (
-                            <Button
-                              onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
-                              variant="ghost"
-                              className="w-full text-muted-foreground"
-                            >
-                              Cancel & Refund Order
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList className="mb-6 w-full justify-start overflow-x-auto">
+          <TabsTrigger value="pending" className="relative">
+            Pending
+            {pendingOrders.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                {pendingOrders.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="preparing" className="relative">
+            Preparing
+            {preparingOrders.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                {preparingOrders.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="ready" className="relative">
+            Ready
+            {readyOrders.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                {readyOrders.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="scheduled" className="relative">
+            Scheduled
+            {scheduledOrders.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                {scheduledOrders.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="cancelled" className="relative">
+            Cancelled
+            {cancelledOrders.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                {cancelledOrders.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="relative">
+            Completed
+            {completedOrders.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                {completedOrders.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        
+        {['pending', 'preparing', 'ready', 'scheduled', 'cancelled', 'completed'].map((status) => (
+          <TabsContent key={status} value={status} className="m-0">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {getFilteredOrders(status).length > 0 ? (
+                getFilteredOrders(status).map((order) => (
+                  <AnimatedTransition key={order.id}>
+                    <OrderCard 
+                      order={order} 
+                      onUpdateStatus={handleUpdateOrderStatus}
+                      showStartPreparingButton={status === 'pending'}
+                      showMarkReadyButton={status === 'preparing'}
+                      showMarkCompletedButton={status === 'ready'}
+                      showCancelButton={['pending', 'preparing', 'ready', 'scheduled'].includes(status)}
+                      startPreparingButtonColor="blue" // Use color for Start Preparing
+                      markReadyButtonColor="orange" // Use color for Mark Ready
+                      markCompletedButtonColor="green" // Use color for Mark Completed
+                    />
+                  </AnimatedTransition>
+                ))
+              ) : (
+                <Card className="sm:col-span-2 lg:col-span-3">
+                  <CardContent className="flex flex-col items-center justify-center p-8">
+                    <div className="rounded-full bg-muted/50 p-4 mb-4">
+                      <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
                     </div>
+                    <h3 className="text-lg font-medium mb-2">No {status} orders found</h3>
+                    {status === 'pending' && (
+                      <p className="text-muted-foreground text-center">
+                        New customer orders will appear here. You can start preparing once received.
+                      </p>
+                    )}
+                    {status === 'preparing' && (
+                      <p className="text-muted-foreground text-center">
+                        Orders being prepared will appear here. Mark them as ready when completed.
+                      </p>
+                    )}
+                    {status === 'ready' && (
+                      <p className="text-muted-foreground text-center">
+                        Ready orders will appear here. Mark them as completed when picked up.
+                      </p>
+                    )}
+                    {status === 'completed' && (
+                      <p className="text-muted-foreground text-center">
+                        Completed orders will appear here for your reference.
+                      </p>
+                    )}
+                    {status === 'cancelled' && (
+                      <p className="text-muted-foreground text-center">
+                        Cancelled orders will appear here for your reference.
+                      </p>
+                    )}
+                    {status === 'scheduled' && (
+                      <p className="text-muted-foreground text-center">
+                        Future scheduled orders will appear here. Prepare them at the scheduled time.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
-              );
-            })
-          )}
-        </div>
-      </AnimatedTransition>
+              )}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 };

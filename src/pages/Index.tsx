@@ -42,7 +42,7 @@ const pricingTiers = [
       'Digital menu with up to 10 items',
       'Basic order management',
       'QR code generation',
-      'Up to 50 orders per month',
+      'Free for the first S$2,000 of transactions per month',
       'Basic sales reports',
     ],
     action: 'Get Started',
@@ -60,7 +60,7 @@ const pricingTiers = [
       'Unlimited orders',
       'Advanced analytics',
       'Priority support',
-      'Demand forecasting',
+      '0.5% transaction fee for amounts exceeding S$2,000',
     ],
     action: 'Subscribe',
     highlighted: true,
@@ -75,9 +75,9 @@ const pricingTiers = [
       'Multiple stall management',
       'Loyalty program tools',
       'Integration with delivery services',
-      'White-label mobile app',
+      'AI-Powered Demand Analysis (S$25/summary)',
       '24/7 Priority support',
-      'Advanced AI analytics',
+      'Forecast 5 dishes for the next 45 meals (15 days)',
     ],
     action: 'Contact Sales',
     highlighted: false,
@@ -118,8 +118,8 @@ const Index = () => {
             <AnimatedTransition delay={0.2}>
               <div className="rounded-lg overflow-hidden shadow-xl">
                 <img 
-                  src="https://images.unsplash.com/photo-1581244277943-fe4a9c777189?q=80&w=1300&auto=format&fit=crop"
-                  alt="Lau Pat Sat Hawker Centre Aerial View" 
+                  src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1300&auto=format&fit=crop"
+                  alt="Food Hawker Center" 
                   className="w-full h-auto object-cover"
                 />
               </div>
