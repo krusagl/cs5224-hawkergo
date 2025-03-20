@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -15,7 +14,6 @@ import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { Switch } from '@/components/ui/switch';
 
-// Mock data for menu items
 interface MenuItem {
   id: string;
   name: string;
@@ -25,7 +23,6 @@ interface MenuItem {
   available: boolean;
 }
 
-// Initial menu items for Chinese noodle stall
 const initialMenuItems: MenuItem[] = [
   {
     id: '1',
@@ -215,6 +212,14 @@ const MenuEditor = () => {
       )
     );
     
+    if (editingItem && editingItem.id === id) {
+      setEditingItem(prev => {
+        if (!prev) return prev;
+        return { ...prev, available: !prev.available };
+      });
+      setHasChanges(true);
+    }
+    
     toast({
       title: 'Item Updated',
       description: 'Item availability has been toggled',
@@ -346,7 +351,6 @@ const MenuEditor = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Menu Items List */}
         <div className="space-y-6">
           <AnimatedTransition>
             <Card>
@@ -395,7 +399,6 @@ const MenuEditor = () => {
           </AnimatedTransition>
         </div>
         
-        {/* Edit Form */}
         <div>
           <AnimatedTransition delay={0.1}>
             {editingItem ? (
@@ -448,6 +451,7 @@ const MenuEditor = () => {
                         onChange={handleInputChange}
                         className="pl-10"
                         disabled={isSubmitting}
+                        inputMode="decimal"
                       />
                     </div>
                   </div>

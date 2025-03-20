@@ -8,22 +8,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BarChart2, 
   QrCode, 
-  ShoppingBag, 
   ChevronRight, 
   Clock, 
   Utensils, 
   DollarSign,
   TrendingUp,
   LayoutDashboard,
-  ToggleRight
+  ToggleRight,
+  ArrowRight,
+  Lock
 } from 'lucide-react';
 import { format, subDays, startOfDay, addDays } from 'date-fns';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps, ReferenceLine } from 'recharts';
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import QRCodeGenerator from '@/components/ui/QRCodeGenerator';
 import { useOrders, Order } from '@/hooks/useOrders';
+import OrderCard from '@/components/ui/OrderCard';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { toast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Generate mock data for sales trends
 const generateSalesTrendData = (days: number = 7) => {
@@ -44,9 +47,9 @@ const generateSalesPredictionData = (days: number = 7) => {
     const date = addDays(today, i);
     return {
       date: format(date, 'MMM dd'),
-      sales: Math.floor(Math.random() * 300) + 100,
+      sales: i === 0 ? Math.floor(Math.random() * 300) + 100 : null,
       predicted: Math.floor(Math.random() * 300) + 100,
-      orders: Math.floor(Math.random() * 20) + 5,
+      orders: i === 0 ? Math.floor(Math.random() * 20) + 5 : null,
       predictedOrders: Math.floor(Math.random() * 20) + 5,
     };
   });
@@ -81,6 +84,7 @@ const Dashboard = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d');
   const [chartType, setChartType] = useState<'revenue' | 'orders'>('revenue');
+  const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   
   // Combined data for sales trends and predictions
   const [combinedSalesData, setCombinedSalesData] = useState(generateSalesPredictionData(14));
@@ -115,8 +119,16 @@ const Dashboard = () => {
   const scheduledOrders = orders.filter(order => order.status === 'scheduled');
   const cancelledOrders = orders.filter(order => order.status === 'cancelled');
   
+  const recentTransactions = [...orders]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 3);
+  
   const uniqueMenuItemIds = [...new Set(orders.flatMap(order => order.items.map(item => item.menuItemId)))];
   const stallUrl = `${window.location.origin}/stall/${user?.id}`;
+
+  const handleOpenPremiumDialog = () => {
+    setPremiumDialogOpen(true);
+  };
 
   if (authLoading) {
     return (
@@ -191,6 +203,65 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Premium Subscription Dialog */}
+      <Dialog open={premiumDialogOpen} onOpenChange={setPremiumDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upgrade to Premium Plan</DialogTitle>
+            <DialogDescription>
+              Get access to AI-powered demand analysis and more advanced features.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-muted p-4 rounded-lg">
+              <h3 className="font-medium mb-2">Premium Plan Features:</h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
+                  <span>AI-Powered Demand Analysis (S$25/summary)</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
+                  <span>Forecast 5 dishes for the next 45 meals (15 days)</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
+                  <span>Multiple stall management</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
+                  <span>Integration with delivery services</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="h-4 w-4 text-primary mr-2 mt-0.5" />
+                  <span>24/7 Priority support</span>
+                </li>
+              </ul>
+            </div>
+            <div className="bg-primary/10 p-4 rounded-lg">
+              <h4 className="font-medium">Premium Plan: S$59/month</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                Cancel anytime. No long-term commitments.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPremiumDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" onClick={() => {
+              toast({
+                title: "Subscription request received",
+                description: "Our team will contact you shortly to complete your subscription.",
+              });
+              setPremiumDialogOpen(false);
+            }}>
+              Subscribe Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Main Dashboard Layout */}
       <div className="grid grid-cols-1 gap-6">
         {/* Key Stats */}
@@ -219,7 +290,7 @@ const Dashboard = () => {
                     <span className="text-muted-foreground text-sm">Pending Orders</span>
                     <Clock className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span className="text-2xl font-bold">{pendingOrders.length + preparingOrders.length}</span>
+                  <span className="text-2xl font-bold">{pendingOrders.length}</span>
                   <Link 
                     to="/hawker/orders" 
                     className="text-xs text-primary hover:underline flex items-center"
@@ -275,42 +346,17 @@ const Dashboard = () => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {orders
+                        {recentTransactions
                           .filter(o => o.status === status)
-                          .slice(0, 5)
                           .map((order) => (
-                            <div key={order.id} className="flex items-center p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                              <div className={`w-3 h-3 rounded-full ${
-                                status === 'pending' ? 'bg-orange-500' : 
-                                status === 'preparing' ? 'bg-blue-500' : 
-                                status === 'ready' ? 'bg-green-500' : 
-                                status === 'cancelled' ? 'bg-red-500' : 
-                                'bg-gray-500'
-                              } mr-3`}></div>
-                              <div className="flex-1">
-                                <div className="flex justify-between">
-                                  <span className="font-medium">{order.customerName}</span>
-                                  <span className="text-sm text-muted-foreground">
-                                    {format(new Date(order.createdAt), 'h:mm a')}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">{order.items.length} items · S${order.totalAmount.toFixed(2)}</span>
-                                  <span className="capitalize font-medium text-xs px-2 py-0.5 rounded-full bg-muted">
-                                    {order.status}
-                                  </span>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => navigate('/hawker/operation-mode')}
-                              >
-                                <ChevronRight className="h-4 w-4" />
-                              </Button>
+                            <div key={order.id} className="flex flex-col sm:flex-row gap-4">
+                              <OrderCard 
+                                order={order} 
+                                onUpdateStatus={updateOrderStatus}
+                              />
                             </div>
-                          )
-                        )}
+                          ))
+                        }
                         
                         <Button
                           variant="outline"
@@ -390,6 +436,16 @@ const Dashboard = () => {
                     tick={{ fontSize: 12 }}
                   />
                   <Tooltip content={<CustomTooltip />} />
+                  <ReferenceLine x={format(new Date(), 'MMM dd')} 
+                    stroke="#888" 
+                    strokeDasharray="3 3" 
+                    label={{ 
+                      value: "Today", 
+                      position: "top", 
+                      fill: "#888", 
+                      fontSize: 12 
+                    }} 
+                  />
                   {chartType === 'revenue' ? (
                     <>
                       <Line 
@@ -457,10 +513,96 @@ const Dashboard = () => {
                   variant="ghost" 
                   size="sm" 
                   className="text-primary"
-                  onClick={() => navigate('/hawker/analytics')}
+                  onClick={handleOpenPremiumDialog}
                 >
-                  View analytics <ChevronRight className="ml-1 h-3 w-3" />
+                  Unlock AI analysis <Lock className="ml-1 h-3 w-3" />
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </AnimatedTransition>
+
+        {/* AI-powered Analytics Section (Locked unless Premium) */}
+        <AnimatedTransition delay={0.3}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold flex items-center">
+                AI-Powered Demand Analysis
+                <Lock className="ml-2 h-4 w-4 text-muted-foreground" />
+              </CardTitle>
+              <CardDescription>
+                Unlock advanced AI predictions for your menu items
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                <div className="opacity-40 pointer-events-none">
+                  <div className="space-y-4">
+                    <p className="text-sm">
+                      Our AI analyzes your historical sales data to predict demand for your dishes,
+                      helping you prepare ingredients efficiently and reduce waste.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Card>
+                        <CardHeader className="p-4 pb-2">
+                          <CardTitle className="text-base">Top Dish Predictions</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                          <ul className="space-y-2">
+                            <li className="flex justify-between">
+                              <span>Fishball Noodles</span>
+                              <span className="font-medium">~24 orders/day</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>Laksa</span>
+                              <span className="font-medium">~18 orders/day</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>Bak Chor Mee</span>
+                              <span className="font-medium">~15 orders/day</span>
+                            </li>
+                          </ul>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="p-4 pb-2">
+                          <CardTitle className="text-base">Ingredient Prep Guide</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                          <ul className="space-y-2">
+                            <li className="flex justify-between">
+                              <span>Fishballs</span>
+                              <span className="font-medium">~3.5kg needed</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>Noodles</span>
+                              <span className="font-medium">~5kg needed</span>
+                            </li>
+                            <li className="flex justify-between">
+                              <span>Minced Pork</span>
+                              <span className="font-medium">~2kg needed</span>
+                            </li>
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overlay with unlock button */}
+                <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+                  <Button 
+                    className="flex items-center gap-2" 
+                    size="lg"
+                    onClick={handleOpenPremiumDialog}
+                  >
+                    <Lock className="h-4 w-4" />
+                    Unlock with Premium
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

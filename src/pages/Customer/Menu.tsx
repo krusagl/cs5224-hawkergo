@@ -63,16 +63,30 @@ const mockMenuItems: MenuItem[] = [
   }
 ];
 
+// Mock stall data for testing
+const mockStalls = {
+  '1': { name: 'Delicious Fishball Noodles', address: 'Hawker Center #01-23' },
+  '2': { name: 'Sunshine Chicken Rice', address: 'Hawker Center #01-45' },
+  '3': { name: 'Happy Laksa House', address: 'Food Court #02-12' },
+};
+
 const CustomerMenu = () => {
   const { stallId } = useParams();
   const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
   const { cartItems, addToCart, removeFromCart, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
+  const [stallInfo, setStallInfo] = useState<{ name: string, address: string } | null>(null);
 
   useEffect(() => {
     // Simulate loading data
     setLoading(true);
+    
+    // Simulate fetching stall info
+    if (stallId && mockStalls[stallId as keyof typeof mockStalls]) {
+      setStallInfo(mockStalls[stallId as keyof typeof mockStalls]);
+    }
+    
     setTimeout(() => {
       setLoading(false);
     }, 500);
@@ -103,6 +117,19 @@ const CustomerMenu = () => {
     return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
+  const handleProceedToOrder = () => {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Please add items to your cart before proceeding.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    navigate(`/stall/${stallId}/order`);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -119,7 +146,7 @@ const CustomerMenu = () => {
           Back to Home
         </Button>
         <h1 className="text-2xl font-bold">
-          {stallId ? `Stall #${stallId} Menu` : 'Menu'}
+          {stallInfo ? stallInfo.name : (stallId ? `Stall #${stallId} Menu` : 'Menu')}
         </h1>
       </div>
 
@@ -210,7 +237,11 @@ const CustomerMenu = () => {
               <div className="font-semibold">
                 Total: S${calculateTotalPrice().toFixed(2)}
               </div>
-              <Button className="w-full mt-4">
+              <Button 
+                className="w-full mt-4"
+                onClick={handleProceedToOrder}
+                disabled={cartItems.length === 0}
+              >
                 Proceed to Order
               </Button>
               {cartItems.length > 0 && (
@@ -232,7 +263,7 @@ const CustomerMenu = () => {
           </Card>
         </div>
       </div>
-      <AnimatedTransition animation="fade" className="fixed bottom-4 right-4 z-50">
+      <AnimatedTransition animation="fade" className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
         <Toaster />
       </AnimatedTransition>
     </div>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Clock, CheckCircle, AlertCircle, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -11,12 +12,26 @@ interface OrderCardProps {
   order: Order;
   onUpdateStatus?: (orderId: string, status: Order['status']) => void;
   isCustomerView?: boolean;
+  showStartPreparingButton?: boolean;
+  showMarkReadyButton?: boolean;
+  showMarkCompletedButton?: boolean;
+  showCancelButton?: boolean;
+  startPreparingButtonColor?: string;
+  markReadyButtonColor?: string;
+  markCompletedButtonColor?: string;
 }
 
 const OrderCard: React.FC<OrderCardProps> = ({
   order,
   onUpdateStatus,
   isCustomerView = false,
+  showStartPreparingButton = true,
+  showMarkReadyButton = true,
+  showMarkCompletedButton = true,
+  showCancelButton = true,
+  startPreparingButtonColor = "default",
+  markReadyButtonColor = "default",
+  markCompletedButtonColor = "default",
 }) => {
   const getStatusDetails = (status: Order['status']) => {
     switch (status) {
@@ -137,9 +152,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
           <>
             <Separator />
             <CardFooter className="p-4 flex-col space-y-2">
-              {order.status === 'pending' && (
+              {order.status === 'pending' && showStartPreparingButton && (
                 <Button 
-                  variant="default" 
+                  variant={startPreparingButtonColor as "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined}
                   className="w-full"
                   onClick={() => onUpdateStatus(order.id, 'preparing')}
                 >
@@ -147,9 +162,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </Button>
               )}
               
-              {order.status === 'preparing' && (
+              {order.status === 'preparing' && showMarkReadyButton && (
                 <Button 
-                  variant="default" 
+                  variant={markReadyButtonColor as "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined}
                   className="w-full"
                   onClick={() => onUpdateStatus(order.id, 'ready')}
                 >
@@ -157,9 +172,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </Button>
               )}
               
-              {order.status === 'ready' && (
+              {order.status === 'ready' && showMarkCompletedButton && (
                 <Button 
-                  variant="default" 
+                  variant={markCompletedButtonColor as "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined}
                   className="w-full"
                   onClick={() => onUpdateStatus(order.id, 'completed')}
                 >
@@ -167,7 +182,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </Button>
               )}
               
-              {(order.status === 'pending' || order.status === 'preparing' || order.status === 'ready' || order.status === 'scheduled') && (
+              {(order.status === 'pending' || order.status === 'preparing' || order.status === 'ready' || order.status === 'scheduled') && showCancelButton && (
                 <Button 
                   variant="outline" 
                   className="w-full text-destructive hover:bg-destructive/10"
