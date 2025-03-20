@@ -24,7 +24,6 @@ import HawkerOperationMode from "./pages/Hawker/OperationMode";
 
 // Customer Pages
 import CustomerMenu from "./pages/Customer/Menu";
-import CustomerOrder from "./pages/Customer/Order";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -53,13 +52,12 @@ const App = () => (
                 <Route path="/hawker/login" element={<HawkerLogin />} />
                 <Route path="/hawker/dashboard" element={<HawkerDashboard />} />
                 <Route path="/hawker/menu" element={<HawkerMenuEditor />} />
-                <Route path="/hawker/orders" element={<HawkerOrders />} />
+                <Route path="/hawker/orders" element={<Navigate to="/hawker/operation-mode" replace />} />
                 <Route path="/hawker/analytics" element={<Navigate to="/hawker/dashboard" replace />} />
                 <Route path="/hawker/operation-mode" element={<HawkerOperationMode />} />
                 
                 {/* Customer Routes */}
                 <Route path="/stall/:stallId" element={<CustomerMenu />} />
-                <Route path="/stall/:stallId/order" element={<CustomerOrder />} />
                 
                 {/* Catch-all Route */}
                 <Route path="*" element={<NotFound />} />

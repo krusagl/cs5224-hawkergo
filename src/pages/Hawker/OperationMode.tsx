@@ -2,87 +2,56 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  ArrowLeft, 
-  Loader2
-} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Search, AlertCircle } from 'lucide-react';
+import { Order, useOrders } from '@/hooks/useOrders';
 import OrderCard from '@/components/ui/OrderCard';
-import { useOrders, Order } from '@/hooks/useOrders';
-import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
+import { toast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const OperationMode = () => {
   const { user, loading: authLoading } = useAuth();
   const { orders, loading: ordersLoading, updateOrderStatus } = useOrders();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('all');
-  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/hawker/login');
     }
   }, [authLoading, user, navigate]);
-  
-  // Group orders by status
-  const allOrders = orders
-    .filter(order => order.status !== 'scheduled')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  useEffect(() => {
+    // Apply filtering and searching
+    let result = [...orders];
     
-  const pendingOrders = orders.filter(order => order.status === 'pending')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-  const preparingOrders = orders.filter(order => order.status === 'preparing')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-  const readyOrders = orders.filter(order => order.status === 'ready')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-  const completedOrders = orders.filter(order => order.status === 'completed')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-  const cancelledOrders = orders.filter(order => order.status === 'cancelled')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  
-  // Get displayed orders based on current tab
-  const getDisplayedOrders = () => {
-    switch(activeTab) {
-      case 'all': return allOrders;
-      case 'pending': return pendingOrders;
-      case 'preparing': return preparingOrders;
-      case 'ready': return readyOrders;
-      case 'completed': return completedOrders;
-      case 'cancelled': return cancelledOrders;
-      default: return allOrders;
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        order => 
+          order.customerName.toLowerCase().includes(query) ||
+          order.id.toLowerCase().includes(query) ||
+          order.items.some(item => item.name.toLowerCase().includes(query))
+      );
     }
-  };
-  
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
-    try {
-      // Only allow status changes when marking as completed
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
-      
-      // Don't process if the new status isn't 'completed' and the current status is 'completed'
-      if (newStatus !== 'completed' && order.status === 'completed') {
-        toast({
-          title: 'Cannot change status',
-          description: 'Completed orders cannot be changed to another status',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      await updateOrderStatus(orderId, newStatus);
-      
+    
+    setFilteredOrders(result);
+  }, [orders, searchQuery]);
+
+  const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
+    const result = await updateOrderStatus(orderId, status);
+    if (result.success) {
       toast({
-        title: 'Order Updated',
-        description: `Order status changed to ${newStatus}`,
+        title: 'Success',
+        description: `Order status updated to ${status}`,
       });
-    } catch (error) {
-      console.error('Error updating order status:', error);
+    } else {
       toast({
         title: 'Error',
         description: 'Failed to update order status',
@@ -90,139 +59,129 @@ const OperationMode = () => {
       });
     }
   };
-  
+
   if (authLoading || ordersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading...</span>
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-12 h-12 rounded-full bg-gray-200 mb-4"></div>
+          <div className="h-4 w-32 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
   }
-  
+
   if (!user) return null;
-  
+
+  const allOrders = filteredOrders;
+  const pendingOrders = filteredOrders.filter(order => order.status === 'pending');
+  const preparingOrders = filteredOrders.filter(order => order.status === 'preparing');
+  const readyOrders = filteredOrders.filter(order => order.status === 'ready');
+  const completedOrders = filteredOrders.filter(order => order.status === 'completed');
+  const cancelledOrders = filteredOrders.filter(order => order.status === 'cancelled');
+
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            className="-ml-3 mr-2"
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+      <AnimatedTransition>
+        <div className="flex items-center mb-8">
+          <Button 
+            variant="ghost" 
             onClick={() => navigate('/hawker/dashboard')}
+            className="mr-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
-          <h1 className="text-2xl font-bold">Operation Mode</h1>
-        </div>
-      </div>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-6 w-full justify-start overflow-x-auto">
-          <TabsTrigger value="all">
-            All Orders
-            {allOrders.length > 0 && (
-              <span className="ml-2 text-xs font-medium">({allOrders.length})</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending
-            {pendingOrders.length > 0 && (
-              <span className="ml-2 text-xs font-medium">({pendingOrders.length})</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="preparing">
-            Preparing
-            {preparingOrders.length > 0 && (
-              <span className="ml-2 text-xs font-medium">({preparingOrders.length})</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="ready">
-            Ready
-            {readyOrders.length > 0 && (
-              <span className="ml-2 text-xs font-medium">({readyOrders.length})</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="cancelled">
-            Cancelled
-            {cancelledOrders.length > 0 && (
-              <span className="ml-2 text-xs font-medium">({cancelledOrders.length})</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed
-            {completedOrders.length > 0 && (
-              <span className="ml-2 text-xs font-medium">({completedOrders.length})</span>
-            )}
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value={activeTab} className="m-0">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {getDisplayedOrders().length > 0 ? (
-              getDisplayedOrders().map((order) => (
-                <AnimatedTransition key={order.id}>
-                  <OrderCard 
-                    order={order} 
-                    onUpdateStatus={handleUpdateOrderStatus}
-                    showStartPreparingButton={order.status === 'pending'}
-                    showMarkReadyButton={order.status === 'preparing'}
-                    showMarkCompletedButton={order.status === 'ready'}
-                    showCancelButton={['pending', 'preparing', 'ready'].includes(order.status)}
-                    startPreparingButtonColor="blue" // Use color for Start Preparing
-                    markReadyButtonColor="orange" // Use color for Mark Ready
-                    markCompletedButtonColor="green" // Use color for Mark Completed
-                  />
-                </AnimatedTransition>
-              ))
-            ) : (
-              <Card className="sm:col-span-2 lg:col-span-3">
-                <CardContent className="flex flex-col items-center justify-center p-8">
-                  <div className="rounded-full bg-muted/50 p-4 mb-4">
-                    <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
-                  </div>
-                  <h3 className="text-lg font-medium mb-2">No {activeTab === 'all' ? '' : activeTab} orders found</h3>
-                  {activeTab === 'pending' && (
-                    <p className="text-muted-foreground text-center">
-                      New customer orders will appear here. You can start preparing once received.
-                    </p>
-                  )}
-                  {activeTab === 'preparing' && (
-                    <p className="text-muted-foreground text-center">
-                      Orders being prepared will appear here. Mark them as ready when completed.
-                    </p>
-                  )}
-                  {activeTab === 'ready' && (
-                    <p className="text-muted-foreground text-center">
-                      Ready orders will appear here. Mark them as completed when picked up.
-                    </p>
-                  )}
-                  {activeTab === 'completed' && (
-                    <p className="text-muted-foreground text-center">
-                      Completed orders will appear here for your reference.
-                    </p>
-                  )}
-                  {activeTab === 'cancelled' && (
-                    <p className="text-muted-foreground text-center">
-                      Cancelled orders will appear here for your reference.
-                    </p>
-                  )}
-                  {activeTab === 'all' && (
-                    <p className="text-muted-foreground text-center">
-                      No orders found. New orders will appear here once customers place them.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Operation Mode</h1>
+            <p className="text-muted-foreground">Manage all your stall orders</p>
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </AnimatedTransition>
+
+      <AnimatedTransition>
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search orders by ID, customer name, or items..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </AnimatedTransition>
+
+      <AnimatedTransition delay={0.1}>
+        <Tabs defaultValue="all">
+          <TabsList>
+            <TabsTrigger value="all">All ({allOrders.length})</TabsTrigger>
+            <TabsTrigger value="pending">New ({pendingOrders.length})</TabsTrigger>
+            <TabsTrigger value="preparing">Preparing ({preparingOrders.length})</TabsTrigger>
+            <TabsTrigger value="ready">Ready ({readyOrders.length})</TabsTrigger>
+            <TabsTrigger value="completed">Completed ({completedOrders.length})</TabsTrigger>
+            <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
+          </TabsList>
+          
+          <div className="mt-6">
+            <TabsContent value="all" className="mt-0">
+              {renderOrderList(allOrders)}
+            </TabsContent>
+            
+            <TabsContent value="pending" className="mt-0">
+              {renderOrderList(pendingOrders)}
+            </TabsContent>
+            
+            <TabsContent value="preparing" className="mt-0">
+              {renderOrderList(preparingOrders)}
+            </TabsContent>
+            
+            <TabsContent value="ready" className="mt-0">
+              {renderOrderList(readyOrders)}
+            </TabsContent>
+            
+            <TabsContent value="completed" className="mt-0">
+              {renderOrderList(completedOrders)}
+            </TabsContent>
+            
+            <TabsContent value="cancelled" className="mt-0">
+              {renderOrderList(cancelledOrders)}
+            </TabsContent>
+          </div>
+        </Tabs>
+      </AnimatedTransition>
     </div>
   );
+
+  function renderOrderList(orderList: Order[]) {
+    if (orderList.length === 0) {
+      return (
+        <Alert className="bg-muted">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {searchQuery
+              ? `No orders found matching "${searchQuery}"`
+              : 'No orders found'}
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {orderList.map((order) => (
+          <OrderCard
+            key={order.id}
+            order={order}
+            onUpdateStatus={handleUpdateOrderStatus}
+          />
+        ))}
+      </div>
+    );
+  }
 };
 
 export default OperationMode;
