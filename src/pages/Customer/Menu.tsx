@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -57,7 +56,6 @@ const CustomerMenu = () => {
   const [loading, setLoading] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   
-  // Checkout state
   const [customerName, setCustomerName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'qr'>('card');
@@ -66,28 +64,22 @@ const CustomerMenu = () => {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<'pending' | 'preparing' | 'ready' | 'completed'>('pending');
   
-  // Calculate cart total
   const cartTotal = React.useMemo(() => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }, [cart]);
   
-  // Estimated preparation time
   const estimatedTime = React.useMemo(() => {
-    // Basic calculation: 5 mins base + 2 mins per item
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     return 5 + (totalItems * 2);
   }, [cart]);
   
-  // Load stall data
   useEffect(() => {
     const fetchStallData = async () => {
       try {
         setLoading(true);
         
-        // Simulate API call to fetch stall data
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Mock stall details
         const mockStallDetails: StallDetails = {
           id: stallId || '1',
           name: 'Delicious Food Stall',
@@ -97,7 +89,6 @@ const CustomerMenu = () => {
           openingHours: '10:00 AM - 8:00 PM'
         };
         
-        // Mock menu items
         const mockMenuItems: MenuItem[] = [
           {
             id: '1',
@@ -158,7 +149,6 @@ const CustomerMenu = () => {
         setStallDetails(mockStallDetails);
         setMenuItems(mockMenuItems);
         
-        // Extract unique categories
         const uniqueCategories = ['all', ...new Set(mockMenuItems.map(item => item.category))];
         setCategories(uniqueCategories);
       } catch (error) {
@@ -176,20 +166,17 @@ const CustomerMenu = () => {
     fetchStallData();
   }, [stallId]);
   
-  // Add item to cart
   const addToCart = (item: MenuItem) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.menuItemId === item.id);
       
       if (existingItem) {
-        // Increment quantity if item already in cart
         return prevCart.map(cartItem => 
           cartItem.menuItemId === item.id 
             ? { ...cartItem, quantity: cartItem.quantity + 1 } 
             : cartItem
         );
       } else {
-        // Add new item to cart
         return [...prevCart, {
           menuItemId: item.id,
           name: item.name,
@@ -199,20 +186,16 @@ const CustomerMenu = () => {
       }
     });
     
-    // Show toast notification
     toast({
       title: 'Added to cart',
       description: `${item.name} has been added to your cart`,
     });
   };
   
-  // Update cart item quantity
   const updateCartItemQuantity = (menuItemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
-      // Remove item if quantity is 0 or negative
       setCart(prevCart => prevCart.filter(item => item.menuItemId !== menuItemId));
     } else {
-      // Update quantity
       setCart(prevCart => 
         prevCart.map(item => 
           item.menuItemId === menuItemId 
@@ -223,12 +206,10 @@ const CustomerMenu = () => {
     }
   };
   
-  // Remove item from cart
   const removeFromCart = (menuItemId: string) => {
     setCart(prevCart => prevCart.filter(item => item.menuItemId !== menuItemId));
   };
   
-  // Update special instructions for an item
   const updateSpecialInstructions = (menuItemId: string, instructions: string) => {
     setCart(prevCart => 
       prevCart.map(item => 
@@ -239,7 +220,6 @@ const CustomerMenu = () => {
     );
   };
   
-  // Open checkout dialog
   const openCheckout = () => {
     if (cart.length === 0) {
       toast({
@@ -253,12 +233,10 @@ const CustomerMenu = () => {
     setCheckoutOpen(true);
   };
   
-  // Filtered menu items based on active category
   const filteredMenuItems = activeCategory === 'all' 
     ? menuItems 
     : menuItems.filter(item => item.category === activeCategory);
   
-  // Simulate order status updates
   useEffect(() => {
     if (!orderId) return;
     
@@ -276,7 +254,7 @@ const CustomerMenu = () => {
           description: 'Your order is ready for collection',
         });
       }
-    }, 10000); // 10 seconds for simulation
+    }, 10000);
     
     return () => clearTimeout(updateStatusTimer);
   }, [orderId, orderStatus]);
@@ -303,10 +281,8 @@ const CustomerMenu = () => {
     try {
       setCheckoutLoading(true);
       
-      // Simulate API call to create order
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Create order in the system
       const result = await createOrder({
         customerId: 'guest',
         customerName,
@@ -343,7 +319,6 @@ const CustomerMenu = () => {
   };
   
   const completeOrder = () => {
-    // In a real app, this would update the order status
     setOrderStatus('completed');
     
     toast({
@@ -351,13 +326,11 @@ const CustomerMenu = () => {
       description: 'Thank you for your order!',
     });
     
-    // Close the checkout dialog and reset states
     setCheckoutOpen(false);
     setOrderPlaced(false);
     setCart([]);
   };
   
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -372,7 +345,6 @@ const CustomerMenu = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Stall Header */}
       <AnimatedTransition>
         <div className="bg-white border-b shadow-sm pt-4 pb-6">
           <div className="container mx-auto px-4">
@@ -399,7 +371,6 @@ const CustomerMenu = () => {
         </div>
       </AnimatedTransition>
       
-      {/* Menu Categories */}
       <AnimatedTransition delay={0.1}>
         <div className="sticky top-16 md:top-20 z-10 bg-white border-b shadow-sm">
           <div className="container mx-auto px-4 overflow-x-auto py-1">
@@ -424,29 +395,22 @@ const CustomerMenu = () => {
         </div>
       </AnimatedTransition>
       
-      {/* Menu Items and Cart */}
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Menu Items */}
           <div className="lg:col-span-2">
             <AnimatedTransition delay={0.2}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredMenuItems.map((item) => (
                   <MenuItemCard 
                     key={item.id}
-                    name={item.name}
-                    description={item.description}
-                    price={item.price}
-                    image={item.image}
-                    available={item.available}
-                    onAddToCart={() => addToCart(item)}
+                    item={item}
+                    onClick={() => addToCart(item)}
                   />
                 ))}
               </div>
             </AnimatedTransition>
           </div>
           
-          {/* Cart */}
           <div className="lg:col-span-1">
             <AnimatedTransition delay={0.3}>
               <Card className="sticky top-36 lg:top-28">
@@ -543,7 +507,6 @@ const CustomerMenu = () => {
         </div>
       </div>
       
-      {/* Checkout Dialog */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="sm:max-w-3xl">
           {!orderPlaced ? (
@@ -557,7 +520,6 @@ const CustomerMenu = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
-                  {/* Customer Information */}
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg">Customer Information</CardTitle>
@@ -586,7 +548,6 @@ const CustomerMenu = () => {
                     </CardContent>
                   </Card>
                   
-                  {/* Payment Method */}
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg">Payment Method</CardTitle>
@@ -623,7 +584,6 @@ const CustomerMenu = () => {
                   </Card>
                 </div>
                 
-                {/* Order Summary */}
                 <Card className="h-fit">
                   <CardHeader>
                     <CardTitle className="text-lg">Order Summary</CardTitle>
@@ -667,7 +627,6 @@ const CustomerMenu = () => {
               </div>
             </>
           ) : (
-            /* Order Status */
             <div className="p-2">
               <div className="flex flex-col items-center text-center">
                 {orderStatus === 'ready' ? (

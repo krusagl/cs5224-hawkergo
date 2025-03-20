@@ -19,7 +19,6 @@ import NotFound from "./pages/NotFound";
 import HawkerLogin from "./pages/Hawker/Login";
 import HawkerDashboard from "./pages/Hawker/Dashboard";
 import HawkerMenuEditor from "./pages/Hawker/MenuEditor";
-import HawkerOrders from "./pages/Hawker/Orders";
 import HawkerOperationMode from "./pages/Hawker/OperationMode";
 
 // Customer Pages
