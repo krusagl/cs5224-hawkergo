@@ -16,7 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import bcmImage from '@/assets/bak chor mee.jpg';
 import fnImage from '@/assets/fishball noodles.jpg';
 import fsImage from '@/assets/fishball soup.jpg';
-import laksaImage from '@/assets/laksajpg';
+import laksaImage from '@/assets/laksa.jpg';
 
 interface MenuItem {
   id: string;
