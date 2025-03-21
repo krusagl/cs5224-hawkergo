@@ -13,6 +13,10 @@ import {
 import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { Switch } from '@/components/ui/switch';
+import bcmImage from '@/assets/bak chor mee.jpg';
+import fnImage from '@/assets/fishball noodles.jpg';
+import fsImage from '@/assets/fishball soup.jpg';
+import laksaImage from '@/assets/laksajpg';
 
 interface MenuItem {
   id: string;
@@ -29,7 +33,7 @@ const initialMenuItems: MenuItem[] = [
     name: 'Fishball Noodles',
     description: 'Delicious noodles served with handmade fishballs in a savory broth.',
     price: 5,
-    image: 'https://images.unsplash.com/photo-1573570095791-df66f86d5b58?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    image: fnImage,
     available: true
   },
   {
@@ -37,7 +41,7 @@ const initialMenuItems: MenuItem[] = [
     name: 'Bak Chor Mee',
     description: 'Minced pork noodles with black vinegar, chili, and various toppings.',
     price: 5,
-    image: 'https://images.unsplash.com/photo-1626804475297-41608ea09aeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    image: bcmImage,
     available: true
   },
   {
@@ -45,7 +49,7 @@ const initialMenuItems: MenuItem[] = [
     name: 'Fishball Soup',
     description: 'A light and tasty soup with handmade fishballs.',
     price: 4,
-    image: 'https://images.unsplash.com/photo-1618866734754-033010aa4de0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    image: fsImage,
     available: true
   },
   {
@@ -53,7 +57,7 @@ const initialMenuItems: MenuItem[] = [
     name: 'Laksa',
     description: 'Spicy noodle soup with coconut milk, prawns, and fish cake.',
     price: 6,
-    image: 'https://images.unsplash.com/photo-1583947582893-604451e5e3d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
+    image: laksaImage,
     available: true
   }
 ];

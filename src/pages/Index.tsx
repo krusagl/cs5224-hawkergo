@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
+import hawkerImage from '@/assets/hawker.jpg';
 
 const features = [
   {
@@ -114,7 +115,7 @@ const Index = () => {
       <section className="w-full">
         <div className="w-full h-[400px] md:h-[500px] overflow-hidden">
           <img 
-            src="https://www.laupasat.sg/nitropack_static/yiOaHEJwQErVvzLyfoMGpgsXyGSYwxUP/assets/images/optimized/rev-9a73174/www.laupasat.sg/wp-content/uploads/2024/04/banner-satay-street-1024x539.jpg"
+            src={hawkerImage}
             alt="Singapore Hawker Food" 
             className="w-full h-full object-cover"
           />
