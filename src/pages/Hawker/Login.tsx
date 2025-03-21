@@ -165,6 +165,15 @@ const Login = () => {
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
+              <div className="text-center w-full">
+                <span className="text-sm text-muted-foreground">Don't have an account? </span>
+                <Link
+                  to="/hawker/register"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Register now
+                </Link>
+              </div>
             </CardFooter>
           </form>
         </Card>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -99,7 +100,7 @@ const Index = () => {
                   Streamline orders, reduce queues, and gain valuable insights with our digital hawker stall management platform.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link to="/hawker/login">
+                  <Link to="/hawker/register">
                     <Button size="lg" className="w-full sm:w-auto">
                       Get Started
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -286,7 +287,7 @@ const Index = () => {
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
               Join hundreds of hawkers who are already using our platform to streamline their operations and grow their business.
             </p>
-            <Link to="/hawker/login">
+            <Link to="/hawker/register">
               <Button size="lg">
                 Get Started Today
                 <ArrowRight className="ml-2 h-4 w-4" />

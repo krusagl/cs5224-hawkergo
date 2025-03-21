@@ -9,11 +9,11 @@ const Navbar = () => {
   const location = useLocation();
   
   // Don't show navbar on customer order page
-  if (location.pathname.includes('/stall/') && location.pathname.includes('/order')) {
+  if (location.pathname.includes('/stall/')) {
     return null;
   }
   
-  // Hide navigation on authenticated pages
+  // Show authenticated navigation
   if (user) {
     return (
       <header className="fixed top-0 left-0 right-0 h-16 md:h-20 bg-white border-b z-50 px-4">
@@ -39,7 +39,7 @@ const Navbar = () => {
               Log in
             </Button>
           </Link>
-          <Link to="/hawker/login">
+          <Link to="/hawker/register">
             <Button size="sm">
               Get Started
             </Button>

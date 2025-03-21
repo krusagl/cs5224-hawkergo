@@ -30,7 +30,6 @@ import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-// Generate mock data for sales trends
 const generateSalesTrendData = (days: number = 7) => {
   return Array.from({ length: days }).map((_, i) => {
     const date = subDays(new Date(), days - i - 1);
@@ -42,11 +41,9 @@ const generateSalesTrendData = (days: number = 7) => {
   });
 };
 
-// Generate mock data for sales predictions
 const generateSalesPredictionData = (pastDays: number = 7, futureDays: number = 7) => {
   const today = new Date();
-  // Past days + today
-  const pastData = Array.from({ length: pastDays + 1 }).map((_, i) => {
+  let pastData = Array.from({ length: pastDays + 1 }).map((_, i) => {
     const date = subDays(today, pastDays - i);
     return {
       date: format(date, 'MMM dd'),
@@ -56,8 +53,7 @@ const generateSalesPredictionData = (pastDays: number = 7, futureDays: number = 
     };
   });
   
-  // Future days
-  const futureData = Array.from({ length: futureDays }).map((_, i) => {
+  let futureData = Array.from({ length: futureDays }).map((_, i) => {
     const date = addDays(today, i + 1);
     return {
       date: format(date, 'MMM dd'),
@@ -101,10 +97,8 @@ const Dashboard = () => {
   const [chartType, setChartType] = useState<'revenue' | 'orders'>('revenue');
   const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   
-  // Combined data for sales trends and predictions
   const [combinedSalesData, setCombinedSalesData] = useState(generateSalesPredictionData(6, 7));
   
-  // Update chart data when time range changes
   useEffect(() => {
     let pastDays = 6;
     let futureDays = 7;
@@ -122,7 +116,6 @@ const Dashboard = () => {
     }
   }, [authLoading, user, navigate]);
 
-  // Calculate some statistics from the orders
   const totalRevenueToday = orders
     .filter(order => {
       const orderDate = new Date(order.createdAt);
@@ -137,14 +130,12 @@ const Dashboard = () => {
   const completedOrders = orders.filter(order => order.status === 'completed');
   const cancelledOrders = orders.filter(order => order.status === 'cancelled');
   
-  // Get recent transactions for each status - limited to 3 per status
   const recentPendingOrders = pendingOrders.slice(0, 3);
   const recentPreparingOrders = preparingOrders.slice(0, 3);
   const recentReadyOrders = readyOrders.slice(0, 3);
   const recentCompletedOrders = completedOrders.slice(0, 3);
   const recentCancelledOrders = cancelledOrders.slice(0, 3);
   
-  // Get recent transactions based on tab value
   const getRecentTransactionsByStatus = (status: string) => {
     switch(status) {
       case 'pending': return recentPendingOrders;
@@ -156,13 +147,11 @@ const Dashboard = () => {
     }
   };
   
-  // Billing information
-  const currentMonthTransactions = 1250; // Mock value in SGD
-  const freeThreshold = 2000; // Free tier threshold in SGD
+  const currentMonthTransactions = 1250;
+  const freeThreshold = 2000;
   const percentageUsed = (currentMonthTransactions / freeThreshold) * 100;
   const remainingFree = freeThreshold - currentMonthTransactions;
   
-  // Calculate past/future sales data safely with type checking
   const pastTotalSales = combinedSalesData
     .filter(d => d.isPast)
     .reduce((acc, curr) => acc + (('sales' in curr) ? Number(curr.sales) : 0), 0);
@@ -201,12 +190,11 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
         <AnimatedTransition>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{user.stallName || 'Your Stall'}</h1>
-            <p className="text-muted-foreground mt-1">{user.stallAddress || 'Manage your stall operations'}</p>
+            <h1 className="text-3xl font-bold tracking-tight">{user?.stallName || 'Your Stall'}</h1>
+            <p className="text-muted-foreground mt-1">{user?.stallAddress || 'Manage your stall operations'}</p>
           </div>
         </AnimatedTransition>
         
@@ -220,11 +208,18 @@ const Dashboard = () => {
               <QrCode className="mr-2 h-4 w-4" />
               Display QR Code
             </Button>
+            <Button
+              variant="default"
+              onClick={() => navigate('/hawker/operation-mode')}
+              className="w-full sm:w-auto"
+            >
+              <ToggleRight className="mr-2 h-4 w-4" />
+              Switch to Operation Mode
+            </Button>
           </div>
         </AnimatedTransition>
       </div>
 
-      {/* QR Code Modal */}
       {showQRCode && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
@@ -234,9 +229,9 @@ const Dashboard = () => {
             </p>
             <div className="flex justify-center mb-4">
               <QRCodeGenerator
-                value={stallUrl}
-                stallName={user.stallName || 'Your Stall'}
-                downloadFileName={`${user.stallName || 'stall'}-qrcode`}
+                value={`${window.location.origin}/stall/${user?.id}`}
+                stallName={user?.stallName || 'Your Stall'}
+                downloadFileName={`${user?.stallName || 'stall'}-qrcode`}
               />
             </div>
             <Button
@@ -250,7 +245,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Premium Subscription Dialog */}
       <Dialog open={premiumDialogOpen} onOpenChange={setPremiumDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -309,7 +303,6 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Billing Information Card */}
       <AnimatedTransition delay={0.1}>
         <Card className="mb-6">
           <CardHeader className="pb-2">
@@ -321,24 +314,24 @@ const Dashboard = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                   <span className="text-sm text-muted-foreground">Current month transactions:</span>
-                  <span className="ml-2 font-bold">S${currentMonthTransactions.toFixed(2)}</span>
+                  <span className="ml-2 font-bold">S$1250.00</span>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Free tier threshold:</span>
-                  <span className="ml-2 font-bold">S${freeThreshold.toFixed(2)}</span>
+                  <span className="ml-2 font-bold">S$2000.00</span>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Remaining free:</span>
-                  <span className="ml-2 font-bold text-green-600">S${remainingFree.toFixed(2)}</span>
+                  <span className="ml-2 font-bold text-green-600">S$750.00</span>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Usage</span>
-                  <span>{percentageUsed.toFixed(1)}%</span>
+                  <span>62.5%</span>
                 </div>
-                <Progress value={percentageUsed} className="h-2" />
+                <Progress value={62.5} className="h-2" />
                 <div className="flex items-center text-xs text-muted-foreground">
                   <Info className="h-3 w-3 mr-1" />
                   <span>Transactions exceeding S$2,000 will incur a 0.5% transaction fee</span>
@@ -349,9 +342,7 @@ const Dashboard = () => {
         </Card>
       </AnimatedTransition>
 
-      {/* Main Dashboard Layout */}
       <div className="grid grid-cols-1 gap-6">
-        {/* Key Stats */}
         <AnimatedTransition>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Card>
@@ -408,7 +399,6 @@ const Dashboard = () => {
           </div>
         </AnimatedTransition>
         
-        {/* Recent Transactions */}
         <AnimatedTransition delay={0.1}>
           <Card>
             <CardHeader>
@@ -458,7 +448,6 @@ const Dashboard = () => {
           </Card>
         </AnimatedTransition>
         
-        {/* Sales Trends */}
         <AnimatedTransition delay={0.2}>
           <Card>
             <CardHeader className="pb-2">
@@ -606,94 +595,5 @@ const Dashboard = () => {
           </Card>
         </AnimatedTransition>
 
-        {/* AI-powered Analytics Section (Locked unless Premium) */}
-        <AnimatedTransition delay={0.3}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center">
-                AI-Powered Demand Analysis
-                <Lock className="ml-2 h-4 w-4 text-muted-foreground" />
-              </CardTitle>
-              <CardDescription>
-                Unlock advanced AI predictions for your menu items
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="relative">
-                <div className="opacity-40 pointer-events-none">
-                  <div className="space-y-4">
-                    <p className="text-sm">
-                      Our AI analyzes your historical sales data to predict demand for your dishes,
-                      helping you prepare ingredients efficiently and reduce waste.
-                    </p>
+        <
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Card>
-                        <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-base">Top Dish Predictions</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                          <ul className="space-y-2">
-                            <li className="flex justify-between">
-                              <span>Fishball Noodles</span>
-                              <span className="font-medium">~24 orders/day</span>
-                            </li>
-                            <li className="flex justify-between">
-                              <span>Laksa</span>
-                              <span className="font-medium">~18 orders/day</span>
-                            </li>
-                            <li className="flex justify-between">
-                              <span>Bak Chor Mee</span>
-                              <span className="font-medium">~15 orders/day</span>
-                            </li>
-                          </ul>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader className="p-4 pb-2">
-                          <CardTitle className="text-base">Ingredient Prep Guide</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                          <ul className="space-y-2">
-                            <li className="flex justify-between">
-                              <span>Fishballs</span>
-                              <span className="font-medium">~3.5kg needed</span>
-                            </li>
-                            <li className="flex justify-between">
-                              <span>Noodles</span>
-                              <span className="font-medium">~5kg needed</span>
-                            </li>
-                            <li className="flex justify-between">
-                              <span>Minced Pork</span>
-                              <span className="font-medium">~2kg needed</span>
-                            </li>
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Overlay with unlock button */}
-                <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-                  <Button 
-                    className="flex items-center gap-2" 
-                    size="lg"
-                    onClick={handleOpenPremiumDialog}
-                  >
-                    <Lock className="h-4 w-4" />
-                    Unlock with Premium
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </AnimatedTransition>
-      </div>
-    </div>
-  );
-};
-
-export default Dashboard;
