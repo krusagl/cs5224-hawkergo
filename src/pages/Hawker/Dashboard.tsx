@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -370,7 +371,7 @@ const Dashboard = () => {
                   </div>
                   <span className="text-2xl font-bold">{pendingOrders.length}</span>
                   <Link 
-                    to="/hawker/orders" 
+                    to="/hawker/operation-mode" 
                     className="text-xs text-primary hover:underline flex items-center"
                   >
                     View all orders
@@ -594,6 +595,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </AnimatedTransition>
+      </div>
+    </div>
+  );
+};
 
-        <
-
+export default Dashboard;
