@@ -52,7 +52,8 @@ const App = () => (
                 <Route path="/hawker/dashboard" element={<HawkerDashboard />} />
                 <Route path="/hawker/menu" element={<HawkerMenuEditor />} />
                 <Route path="/hawker/operation-mode" element={<HawkerOperationMode />} />
-                <Route path="/hawker/orders" element={<HawkerOperationMode />} /> {/* Direct to OperationMode without redirect */}
+                {/* Redirected /orders to operation-mode so users can access the same page from both URLs */}
+                <Route path="/hawker/orders" element={<HawkerOperationMode />} />
                 
                 {/* Customer Routes */}
                 <Route path="/stall/:stallId" element={<CustomerMenu />} />
