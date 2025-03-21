@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Clock, CheckCircle, AlertCircle, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -197,6 +196,26 @@ const OrderCard: React.FC<OrderCardProps> = ({
       </Card>
     </AnimatedTransition>
   );
+};
+
+// Add the missing functions from the original file
+const getPaymentStatusBadge = (status: 'paid' | 'pending') => {
+  switch (status) {
+    case 'paid':
+      return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Paid</Badge>;
+    case 'pending':
+      return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Payment Pending</Badge>;
+    default:
+      return null;
+  }
+};
+
+const formatTime = (dateString: string) => {
+  return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString();
 };
 
 export default OrderCard;

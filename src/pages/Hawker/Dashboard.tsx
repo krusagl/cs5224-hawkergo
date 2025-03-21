@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -22,7 +23,10 @@ import {
   Info,
   Edit,
   Save,
-  X
+  X,
+  Brain,
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { format, subDays, startOfDay, addDays } from 'date-fns';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps, ReferenceLine } from 'recharts';
@@ -57,12 +61,22 @@ const generateSalesPredictionData = (pastDays: number = 7, futureDays: number = 
     };
   });
   
+  // Make sure the last past data point matches the first future data point
+  const lastPastDataPoint = pastData[pastData.length - 1];
+  
   let futureData = Array.from({ length: futureDays }).map((_, i) => {
     const date = addDays(today, i + 1);
+    const predicted = i === 0 
+      ? lastPastDataPoint.sales 
+      : Math.floor(Math.random() * 300) + 100;
+    const predictedOrders = i === 0 
+      ? lastPastDataPoint.orders
+      : Math.floor(Math.random() * 20) + 5;
+      
     return {
       date: format(date, 'MMM dd'),
-      predicted: Math.floor(Math.random() * 300) + 100,
-      predictedOrders: Math.floor(Math.random() * 20) + 5,
+      predicted,
+      predictedOrders,
       isPast: false,
     };
   });
@@ -102,12 +116,15 @@ const Dashboard = () => {
   const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   const [editingStallName, setEditingStallName] = useState(false);
   const [stallName, setStallName] = useState('');
+  const [editingStallAddress, setEditingStallAddress] = useState(false);
+  const [stallAddress, setStallAddress] = useState('');
   
   const [combinedSalesData, setCombinedSalesData] = useState(generateSalesPredictionData(6, 7));
   
   useEffect(() => {
     if (user) {
       setStallName(user.stallName || '');
+      setStallAddress(user.stallAddress || '');
     }
   }, [user]);
 
@@ -219,6 +236,38 @@ const Dashboard = () => {
     setEditingStallName(false);
   };
 
+  const handleSaveStallAddress = async () => {
+    if (!stallAddress.trim()) {
+      toast({
+        title: "Error",
+        description: "Stall address cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await updateProfile({ stallAddress });
+      toast({
+        title: "Success",
+        description: "Stall address updated successfully"
+      });
+      setEditingStallAddress(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update stall address",
+        variant: "destructive"
+      });
+      console.error("Failed to update stall address:", error);
+    }
+  };
+
+  const handleCancelAddressEdit = () => {
+    setStallAddress(user?.stallAddress || '');
+    setEditingStallAddress(false);
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -260,7 +309,29 @@ const Dashboard = () => {
                 </Button>
               </div>
             )}
-            <p className="text-muted-foreground mt-1">{user?.stallAddress || 'Manage your stall operations'}</p>
+            {editingStallAddress ? (
+              <div className="flex items-center gap-2 mt-1">
+                <Input 
+                  value={stallAddress}
+                  onChange={(e) => setStallAddress(e.target.value)}
+                  placeholder="Enter stall address"
+                  className="text-sm max-w-[300px]"
+                />
+                <Button size="icon" variant="ghost" onClick={handleSaveStallAddress} title="Save">
+                  <Save className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={handleCancelAddressEdit} title="Cancel">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-muted-foreground">{user?.stallAddress || 'Manage your stall operations'}</p>
+                <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setEditingStallAddress(true)} title="Edit stall address">
+                  <Edit className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
         </AnimatedTransition>
         
@@ -431,7 +502,7 @@ const Dashboard = () => {
               <CardContent className="p-6">
                 <div className="flex flex-col space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-sm">Pending Orders</span>
+                    <span className="text-muted-foreground text-sm">New Orders</span>
                     <Clock className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <span className="text-2xl font-bold">{pendingOrders.length}</span>
@@ -474,7 +545,7 @@ const Dashboard = () => {
             <CardContent>
               <Tabs defaultValue="pending">
                 <TabsList className="mb-4">
-                  <TabsTrigger value="pending">Pending ({pendingOrders.length})</TabsTrigger>
+                  <TabsTrigger value="pending">New ({pendingOrders.length})</TabsTrigger>
                   <TabsTrigger value="preparing">Preparing ({preparingOrders.length})</TabsTrigger>
                   <TabsTrigger value="ready">Ready ({readyOrders.length})</TabsTrigger>
                   <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>
@@ -485,7 +556,7 @@ const Dashboard = () => {
                   <TabsContent key={status} value={status} className="m-0">
                     {getRecentTransactionsByStatus(status).length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground">
-                        No {status} orders
+                        No {status === 'pending' ? 'new' : status} orders
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -656,6 +727,98 @@ const Dashboard = () => {
                 >
                   Unlock AI analysis <Lock className="ml-1 h-3 w-3" />
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </AnimatedTransition>
+
+        {/* AI-powered Analytics Section */}
+        <AnimatedTransition delay={0.3}>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-semibold flex items-center">
+                    <Brain className="h-5 w-5 mr-2 text-primary" />
+                    AI-powered Dish Analysis
+                  </CardTitle>
+                  <CardDescription>Get intelligent insights about your menu performance</CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-primary border-primary"
+                  onClick={handleOpenPremiumDialog}
+                >
+                  <Lock className="mr-2 h-4 w-4" />
+                  Premium Feature
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                {/* Blurred preview content */}
+                <div className="filter blur-[2px] pointer-events-none">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="border rounded-lg p-4 bg-muted/30">
+                      <div className="flex items-center mb-2">
+                        <Sparkles className="h-4 w-4 text-amber-500 mr-2" />
+                        <h3 className="font-medium">Popular Dish Forecast</h3>
+                      </div>
+                      <p className="text-sm mb-3">Based on historical data, these dishes are predicted to be popular tomorrow:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-sm">
+                        <li>Fishball Noodles - Est. 45 orders</li>
+                        <li>Bak Chor Mee - Est. 32 orders</li>
+                        <li>Laksa - Est. 28 orders</li>
+                      </ol>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4 bg-muted/30">
+                      <div className="flex items-center mb-2">
+                        <TrendingUp className="h-4 w-4 text-green-500 mr-2" />
+                        <h3 className="font-medium">Trending Combinations</h3>
+                      </div>
+                      <p className="text-sm mb-3">Customers often order these items together:</p>
+                      <ul className="space-y-1 text-sm">
+                        <li>• Fishball Noodles + Extra Fishballs</li>
+                        <li>• Bak Chor Mee + Iced Lemon Tea</li>
+                        <li>• Laksa + Otah</li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <div className="flex items-center mb-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
+                      <h3 className="font-medium">Inventory Recommendations</h3>
+                    </div>
+                    <p className="text-sm mb-3">Based on predicted sales for tomorrow:</p>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="font-medium">Fishballs:</span> Prepare ~200 pieces (10kg)
+                      </div>
+                      <div>
+                        <span className="font-medium">Minced Pork:</span> Prepare ~8kg
+                      </div>
+                      <div>
+                        <span className="font-medium">Noodles:</span> Prepare ~15kg
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Lock overlay */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg">
+                  <Lock className="h-10 w-10 text-muted-foreground mb-3" />
+                  <h3 className="text-lg font-medium mb-2">Premium Feature Locked</h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
+                    Unlock AI-powered analytics to get personalized recommendations for your menu, 
+                    inventory planning, and sales forecasts.
+                  </p>
+                  <Button onClick={handleOpenPremiumDialog}>
+                    Upgrade to Premium
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
