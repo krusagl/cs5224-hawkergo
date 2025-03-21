@@ -183,6 +183,10 @@ const Dashboard = () => {
   const uniqueMenuItemIds = [...new Set(orders.flatMap(order => order.items.map(item => item.menuItemId)))];
   const stallUrl = `${window.location.origin}/stall/${user?.id}`;
 
+  const handleOpenPremiumDialog = () => {
+    setPremiumDialogOpen(true);
+  };
+
   const handleSaveStallName = async () => {
     if (!stallName.trim()) {
       toast({
@@ -662,4 +666,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
