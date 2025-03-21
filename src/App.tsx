@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -52,7 +52,7 @@ const App = () => (
                 <Route path="/hawker/dashboard" element={<HawkerDashboard />} />
                 <Route path="/hawker/menu" element={<HawkerMenuEditor />} />
                 <Route path="/hawker/operation-mode" element={<HawkerOperationMode />} />
-                <Route path="/hawker/orders" element={<Navigate to="/hawker/operation-mode" replace />} />
+                <Route path="/hawker/orders" element={<HawkerOperationMode />} /> {/* Direct to OperationMode without redirect */}
                 
                 {/* Customer Routes */}
                 <Route path="/stall/:stallId" element={<CustomerMenu />} />
