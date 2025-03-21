@@ -39,10 +39,10 @@ const pricingTiers = [
     description: 'Perfect for new hawkers trying out digital solutions',
     features: [
       'Digital menu with up to 10 items',
-      'Basic order management',
-      'QR code generation',
-      'Free for the first S$2,000 of transactions per month',
+      'Accept & manage orders digitally',
+      'QR code for digital menu',
       'Basic sales reports',
+      'Free for the first S$2,000 of transactions per month',
     ],
     action: 'Get Started',
     highlighted: false,
@@ -54,12 +54,9 @@ const pricingTiers = [
     description: 'For established hawkers looking to grow',
     features: [
       'Unlimited menu items',
-      'Advanced order management',
-      'Custom QR code design',
       'Unlimited orders',
-      'Advanced analytics',
+      'AI-Powered demand analysis',
       'Priority support',
-      '0.5% transaction fee for amounts exceeding S$2,000',
     ],
     action: 'Subscribe',
     highlighted: true,
@@ -72,11 +69,7 @@ const pricingTiers = [
     features: [
       'Everything in Standard',
       'Multiple stall management',
-      'Loyalty program tools',
-      'Integration with delivery services',
-      'AI-Powered Demand Analysis (S$25/summary)',
       '24/7 Priority support',
-      'Forecast 5 dishes for the next 45 meals (15 days)',
     ],
     action: 'Contact Sales',
     highlighted: false,
@@ -121,7 +114,7 @@ const Index = () => {
       <section className="w-full">
         <div className="w-full h-[400px] md:h-[500px] overflow-hidden">
           <img 
-            src="https://images.unsplash.com/photo-1560620884-8fe0435b14c9?q=80&w=1300&auto=format&fit=crop"
+            src="https://www.laupasat.sg/nitropack_static/yiOaHEJwQErVvzLyfoMGpgsXyGSYwxUP/assets/images/optimized/rev-9a73174/www.laupasat.sg/wp-content/uploads/2024/04/banner-satay-street-1024x539.jpg"
             alt="Singapore Hawker Food" 
             className="w-full h-full object-cover"
           />

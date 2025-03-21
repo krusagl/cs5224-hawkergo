@@ -203,7 +203,7 @@ const Register = () => {
                   <Input
                     id="stallAddress"
                     name="stallAddress"
-                    placeholder="Stall Location"
+                    placeholder="Your Stall Address"
                     value={formData.stallAddress}
                     onChange={handleChange}
                     required
