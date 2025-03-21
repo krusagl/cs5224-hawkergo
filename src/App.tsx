@@ -17,7 +17,6 @@ import NotFound from "./pages/NotFound";
 
 // Hawker Pages
 import HawkerLogin from "./pages/Hawker/Login";
-import HawkerRegister from "./pages/Hawker/Register";
 import HawkerDashboard from "./pages/Hawker/Dashboard";
 import HawkerMenuEditor from "./pages/Hawker/MenuEditor";
 import HawkerOperationMode from "./pages/Hawker/OperationMode";
@@ -50,7 +49,6 @@ const App = () => (
                 
                 {/* Hawker Routes */}
                 <Route path="/hawker/login" element={<HawkerLogin />} />
-                <Route path="/hawker/register" element={<HawkerRegister />} />
                 <Route path="/hawker/dashboard" element={<HawkerDashboard />} />
                 <Route path="/hawker/menu" element={<HawkerMenuEditor />} />
                 <Route path="/hawker/operation-mode" element={<HawkerOperationMode />} />

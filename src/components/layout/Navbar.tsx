@@ -39,7 +39,7 @@ const Navbar = () => {
               Log in
             </Button>
           </Link>
-          <Link to="/hawker/register">
+          <Link to="/hawker/login">
             <Button size="sm">
               Get Started
             </Button>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress'; 
+import { Input } from '@/components/ui/input';
 import { 
   BarChart2, 
   QrCode, 
@@ -19,7 +19,10 @@ import {
   ArrowRight,
   Lock,
   CheckCircle,
-  Info
+  Info,
+  Edit,
+  Save,
+  X
 } from 'lucide-react';
 import { format, subDays, startOfDay, addDays } from 'date-fns';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps, ReferenceLine } from 'recharts';
@@ -90,16 +93,24 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 };
 
 const Dashboard = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, updateProfile } = useAuth();
   const { orders, loading: ordersLoading, updateOrderStatus } = useOrders();
   const navigate = useNavigate();
   const [showQRCode, setShowQRCode] = useState(false);
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d');
   const [chartType, setChartType] = useState<'revenue' | 'orders'>('revenue');
   const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
+  const [editingStallName, setEditingStallName] = useState(false);
+  const [stallName, setStallName] = useState('');
   
   const [combinedSalesData, setCombinedSalesData] = useState(generateSalesPredictionData(6, 7));
   
+  useEffect(() => {
+    if (user) {
+      setStallName(user.stallName || '');
+    }
+  }, [user]);
+
   useEffect(() => {
     let pastDays = 6;
     let futureDays = 7;
@@ -172,8 +183,36 @@ const Dashboard = () => {
   const uniqueMenuItemIds = [...new Set(orders.flatMap(order => order.items.map(item => item.menuItemId)))];
   const stallUrl = `${window.location.origin}/stall/${user?.id}`;
 
-  const handleOpenPremiumDialog = () => {
-    setPremiumDialogOpen(true);
+  const handleSaveStallName = async () => {
+    if (!stallName.trim()) {
+      toast({
+        title: "Error",
+        description: "Stall name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await updateProfile({ stallName });
+      toast({
+        title: "Success",
+        description: "Stall name updated successfully"
+      });
+      setEditingStallName(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update stall name",
+        variant: "destructive"
+      });
+      console.error("Failed to update stall name:", error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setStallName(user?.stallName || '');
+    setEditingStallName(false);
   };
 
   if (authLoading) {
@@ -194,7 +233,29 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
         <AnimatedTransition>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{user?.stallName || 'Your Stall'}</h1>
+            {editingStallName ? (
+              <div className="flex items-center gap-2">
+                <Input 
+                  value={stallName}
+                  onChange={(e) => setStallName(e.target.value)}
+                  placeholder="Enter stall name"
+                  className="text-xl font-bold max-w-[250px]"
+                />
+                <Button size="icon" variant="ghost" onClick={handleSaveStallName} title="Save">
+                  <Save className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={handleCancelEdit} title="Cancel">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold tracking-tight">{user?.stallName || 'Your Stall'}</h1>
+                <Button size="icon" variant="ghost" onClick={() => setEditingStallName(true)} title="Edit stall name">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             <p className="text-muted-foreground mt-1">{user?.stallAddress || 'Manage your stall operations'}</p>
           </div>
         </AnimatedTransition>
@@ -601,3 +662,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
