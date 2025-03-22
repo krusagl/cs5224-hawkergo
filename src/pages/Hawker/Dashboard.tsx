@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -33,6 +32,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import QRCodeGenerator from '@/components/ui/QRCodeGenerator';
 import { useOrders, Order } from '@/hooks/useOrders';
+import { useBillingInfo } from '@/hooks/useBillingInfo';
 import OrderCard from '@/components/ui/OrderCard';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { toast } from '@/hooks/use-toast';
@@ -61,7 +61,6 @@ const generateSalesPredictionData = (pastDays: number = 7, futureDays: number = 
     };
   });
   
-  // Make sure the last past data point matches the first future data point
   const lastPastDataPoint = pastData[pastData.length - 1];
   
   let futureData = Array.from({ length: futureDays }).map((_, i) => {
@@ -109,6 +108,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 const Dashboard = () => {
   const { user, loading: authLoading, updateProfile } = useAuth();
   const { orders, loading: ordersLoading, updateOrderStatus } = useOrders();
+  const billingInfo = useBillingInfo(orders);
   const navigate = useNavigate();
   const [showQRCode, setShowQRCode] = useState(false);
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d');
@@ -176,11 +176,12 @@ const Dashboard = () => {
     }
   };
   
-  const currentMonthTransactions = 1250;
-  const freeThreshold = 2000;
-  const percentageUsed = (currentMonthTransactions / freeThreshold) * 100;
-  const remainingFree = freeThreshold - currentMonthTransactions;
-  
+  const currentMonthTransactions = billingInfo.currentMonthTransactions;
+  const freeThreshold = billingInfo.freeThreshold;
+  const percentageUsed = billingInfo.percentageUsed;
+  const remainingFree = billingInfo.remainingFree;
+  const transactionFee = billingInfo.transactionFee;
+
   const pastTotalSales = combinedSalesData
     .filter(d => d.isPast)
     .reduce((acc, curr) => acc + (('sales' in curr) ? Number(curr.sales) : 0), 0);
@@ -451,28 +452,34 @@ const Dashboard = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                   <span className="text-sm text-muted-foreground">Current month transactions:</span>
-                  <span className="ml-2 font-bold">S$1250.00</span>
+                  <span className="ml-2 font-bold">S${billingInfo.currentMonthTransactions.toFixed(2)}</span>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Free tier threshold:</span>
-                  <span className="ml-2 font-bold">S$2000.00</span>
+                  <span className="ml-2 font-bold">S${billingInfo.freeThreshold.toFixed(2)}</span>
                 </div>
                 <div>
                   <span className="text-sm text-muted-foreground">Remaining free:</span>
-                  <span className="ml-2 font-bold text-green-600">S$750.00</span>
+                  <span className="ml-2 font-bold text-green-600">S${billingInfo.remainingFree.toFixed(2)}</span>
                 </div>
               </div>
               
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Usage</span>
-                  <span>62.5%</span>
+                  <span>{billingInfo.percentageUsed.toFixed(1)}%</span>
                 </div>
-                <Progress value={62.5} className="h-2" />
+                <Progress value={billingInfo.percentageUsed} className="h-2" />
                 <div className="flex items-center text-xs text-muted-foreground">
                   <Info className="h-3 w-3 mr-1" />
                   <span>Transactions exceeding S$2,000 will incur a 0.5% transaction fee</span>
                 </div>
+                {billingInfo.transactionFee > 0 && (
+                  <div className="flex items-center text-xs text-amber-600 mt-1">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    <span>Current transaction fee: S${billingInfo.transactionFee.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -732,7 +739,6 @@ const Dashboard = () => {
           </Card>
         </AnimatedTransition>
 
-        {/* AI-powered Analytics Section */}
         <AnimatedTransition delay={0.3}>
           <Card>
             <CardHeader className="pb-2">
@@ -757,7 +763,6 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="relative">
-                {/* Blurred preview content */}
                 <div className="filter blur-[2px] pointer-events-none">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="border rounded-lg p-4 bg-muted/30">
@@ -807,7 +812,6 @@ const Dashboard = () => {
                   </div>
                 </div>
                 
-                {/* Lock overlay */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg">
                   <Lock className="h-10 w-10 text-muted-foreground mb-3" />
                   <h3 className="text-lg font-medium mb-2">Premium Feature Locked</h3>
@@ -829,3 +833,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
