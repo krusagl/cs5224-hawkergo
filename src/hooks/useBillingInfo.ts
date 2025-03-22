@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { startOfMonth, endOfMonth, isWithinInterval, startOfDay } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, startOfDay, isSameDay } from 'date-fns';
 import { Order } from './useOrders';
 
 interface BillingInfo {
@@ -30,7 +30,7 @@ export const useBillingInfo = (orders: Order[]) => {
       const monthEnd = endOfMonth(now);
       const todayStart = startOfDay(now);
 
-      // Filter completed/ready paid orders for the current month and calculate total amount
+      // Filter completed/ready paid orders for the current month
       const completedOrdersThisMonth = orders.filter(order => {
         const orderDate = new Date(order.createdAt);
         return (
@@ -46,7 +46,7 @@ export const useBillingInfo = (orders: Order[]) => {
         return (
           (order.status === 'completed' || order.status === 'ready') && 
           order.paymentStatus === 'paid' &&
-          orderDate >= todayStart
+          isSameDay(orderDate, now)
         );
       });
 
