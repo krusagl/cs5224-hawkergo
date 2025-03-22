@@ -44,7 +44,7 @@ export interface Order {
   stallID: string;
   customerName: string;
   customerContact: string;
-  orderStatus: 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  orderStatus: 'new' | 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'scheduled';
   orderDateTime: string;
   orderTotalCost: number;
   orderDetails: OrderItem[];
