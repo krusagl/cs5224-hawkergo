@@ -35,7 +35,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
 }) => {
   const getStatusDetails = (status: Order['status']) => {
     switch (status) {
-      case 'pending':
+      case 'new':
+      case 'pending': // Keeping backward compatibility
         return {
           label: 'New Order',
           color: 'bg-blue-100 text-blue-800',
@@ -72,7 +73,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           icon: <Clock className="h-4 w-4 mr-1" />,
         };
       default:
-        // Fallback to 'New Order' status if somehow an unknown status comes through
+        // This should never happen now with our improved typing
         return {
           label: 'New Order',
           color: 'bg-blue-100 text-blue-800',
@@ -159,7 +160,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           <>
             <Separator />
             <CardFooter className="p-4 flex-col space-y-2">
-              {order.status === 'pending' && showStartPreparingButton && (
+              {(order.status === 'new' || order.status === 'pending') && showStartPreparingButton && (
                 <Button 
                   variant={startPreparingButtonColor as "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined}
                   className="w-full"

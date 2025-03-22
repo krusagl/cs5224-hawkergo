@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const OperationMode = () => {
   const { user, loading: authLoading } = useAuth();
-  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders();
+  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders(user?.id);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -49,7 +49,7 @@ const OperationMode = () => {
     if (result.success) {
       toast({
         title: 'Success',
-        description: `Order status updated to ${status === 'pending' ? 'New' : status}`,
+        description: `Order status updated to ${status === 'new' ? 'New' : status}`,
       });
     } else {
       toast({
@@ -74,7 +74,8 @@ const OperationMode = () => {
   if (!user) return null;
 
   const allOrders = filteredOrders;
-  const pendingOrders = filteredOrders.filter(order => order.status === 'pending');
+  // Update to use 'new' instead of 'pending' status
+  const newOrders = filteredOrders.filter(order => order.status === 'new' || order.status === 'pending');
   const preparingOrders = filteredOrders.filter(order => order.status === 'preparing');
   const readyOrders = filteredOrders.filter(order => order.status === 'ready');
   const completedOrders = filteredOrders.filter(order => order.status === 'completed');
@@ -119,7 +120,7 @@ const OperationMode = () => {
         <Tabs defaultValue="all">
           <TabsList>
             <TabsTrigger value="all">All ({allOrders.length})</TabsTrigger>
-            <TabsTrigger value="pending">New ({pendingOrders.length})</TabsTrigger>
+            <TabsTrigger value="new">New ({newOrders.length})</TabsTrigger>
             <TabsTrigger value="preparing">Preparing ({preparingOrders.length})</TabsTrigger>
             <TabsTrigger value="ready">Ready ({readyOrders.length})</TabsTrigger>
             <TabsTrigger value="completed">Completed ({completedOrders.length})</TabsTrigger>
@@ -131,8 +132,8 @@ const OperationMode = () => {
               {renderOrderList(allOrders)}
             </TabsContent>
             
-            <TabsContent value="pending" className="mt-0">
-              {renderOrderList(pendingOrders)}
+            <TabsContent value="new" className="mt-0">
+              {renderOrderList(newOrders)}
             </TabsContent>
             
             <TabsContent value="preparing" className="mt-0">
