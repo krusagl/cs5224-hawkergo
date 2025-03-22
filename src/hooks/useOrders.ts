@@ -49,8 +49,22 @@ interface CreateOrderResult {
   orderId?: string;
 }
 
-// Mock orders data
-const generateMockOrders = (hawkerId: string): Order[] => {
+// API endpoints - can be replaced with real values later
+const API_ENDPOINTS = {
+  ORDERS: '/api/orders',
+  ORDER_STATUS: (orderId: string) => `/api/orders/${orderId}/status`,
+  CREATE_ORDER: '/api/orders/create',
+  PAYMENT: '/api/payments',
+  USER_PROFILE: '/api/user/profile',
+  ANALYTICS: '/api/analytics',
+};
+
+// Mock orders data for demo accounts only
+const generateMockOrders = (hawkerId: string, isDemo: boolean = true): Order[] => {
+  if (!isDemo) {
+    return []; // New users start with an empty dashboard
+  }
+  
   const now = new Date();
   const menuItems = [
     { menuItemId: '1', name: 'Fishball Noodles', price: 5 },
@@ -133,11 +147,19 @@ export const useOrders = (hawkerId: string = '1') => {
       try {
         setLoading(true);
         
+        // Check if this is a demo account from localStorage
+        const storedUser = localStorage.getItem('user');
+        const user = storedUser ? JSON.parse(storedUser) : null;
+        const isDemo = user?.accountType === 'demo';
+        
+        // In a real implementation, this would be a fetch call to the API
+        // fetch(API_ENDPOINTS.ORDERS)
+        
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Generate mock orders
-        const mockOrders = generateMockOrders(hawkerId);
+        // Generate mock orders for demo accounts only
+        const mockOrders = generateMockOrders(hawkerId, isDemo);
         setOrders(mockOrders);
       } catch (error) {
         console.error('Error loading orders:', error);
@@ -151,6 +173,13 @@ export const useOrders = (hawkerId: string = '1') => {
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']): Promise<UpdateOrderStatusResult> => {
     try {
+      // In a real implementation, this would be a fetch call to the API
+      // await fetch(API_ENDPOINTS.ORDER_STATUS(orderId), {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ status: newStatus })
+      // });
+      
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
@@ -183,6 +212,14 @@ export const useOrders = (hawkerId: string = '1') => {
   
   const createOrder = async (orderData: CreateOrderParams): Promise<CreateOrderResult> => {
     try {
+      // In a real implementation, this would be a fetch call to the API
+      // const response = await fetch(API_ENDPOINTS.CREATE_ORDER, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(orderData)
+      // });
+      // const data = await response.json();
+      
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       

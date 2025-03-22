@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Clock, CheckCircle, AlertCircle, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -64,11 +65,18 @@ const OrderCard: React.FC<OrderCardProps> = ({
           color: 'bg-red-100 text-red-800',
           icon: <AlertCircle className="h-4 w-4 mr-1" />,
         };
-      default:
+      case 'scheduled':
         return {
-          label: 'Unknown',
-          color: 'bg-gray-100 text-gray-800',
-          icon: null,
+          label: 'Scheduled',
+          color: 'bg-purple-100 text-purple-800',
+          icon: <Clock className="h-4 w-4 mr-1" />,
+        };
+      default:
+        // Fallback to 'New Order' status if somehow an unknown status comes through
+        return {
+          label: 'New Order',
+          color: 'bg-blue-100 text-blue-800',
+          icon: <ShoppingBag className="h-4 w-4 mr-1" />,
         };
     }
   };
@@ -198,7 +206,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   );
 };
 
-// Add the missing functions from the original file
+// Helper functions
 const getPaymentStatusBadge = (status: 'paid' | 'pending') => {
   switch (status) {
     case 'paid':

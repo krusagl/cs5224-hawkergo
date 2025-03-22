@@ -49,7 +49,7 @@ const OperationMode = () => {
     if (result.success) {
       toast({
         title: 'Success',
-        description: `Order status updated to ${status}`,
+        description: `Order status updated to ${status === 'pending' ? 'New' : status}`,
       });
     } else {
       toast({
