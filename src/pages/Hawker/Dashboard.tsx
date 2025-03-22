@@ -27,7 +27,7 @@ import {
   Sparkles,
   AlertTriangle
 } from 'lucide-react';
-import { format, subDays, startOfDay, addDays } from 'date-fns';
+import { format, subDays, startOfDay, addDays, differenceInDays, isSameDay } from 'date-fns';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps, ReferenceLine } from 'recharts';
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import QRCodeGenerator from '@/components/ui/QRCodeGenerator';
@@ -38,49 +38,84 @@ import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-const generateSalesTrendData = (days: number = 7) => {
-  return Array.from({ length: days }).map((_, i) => {
-    const date = subDays(new Date(), days - i - 1);
-    return {
-      date: format(date, 'MMM dd'),
-      sales: Math.floor(Math.random() * 300) + 100,
-      orders: Math.floor(Math.random() * 20) + 5,
-    };
-  });
+const generateSalesTrendData = (orders: Order[], days: number = 7) => {
+  const today = new Date();
+  const result = [];
+
+  for (let i = 0; i < days; i++) {
+    const date = subDays(today, days - i - 1);
+    const dateStr = format(date, 'MMM dd');
+    
+    const dayOrders = orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      return (
+        (order.status === 'completed' || order.status === 'ready') &&
+        order.paymentStatus === 'paid' &&
+        isSameDay(orderDate, date)
+      );
+    });
+    
+    const daySales = dayOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const orderCount = dayOrders.length;
+    
+    result.push({
+      date: dateStr,
+      sales: daySales,
+      orders: orderCount,
+    });
+  }
+  
+  return result;
 };
 
-const generateSalesPredictionData = (pastDays: number = 7, futureDays: number = 7) => {
+const generateSalesPredictionData = (orders: Order[], pastDays: number = 7, futureDays: number = 7) => {
   const today = new Date();
-  let pastData = Array.from({ length: pastDays + 1 }).map((_, i) => {
-    const date = subDays(today, pastDays - i);
-    return {
-      date: format(date, 'MMM dd'),
-      sales: Math.floor(Math.random() * 300) + 100,
-      orders: Math.floor(Math.random() * 20) + 5,
-      isPast: true,
-    };
-  });
+  const pastData = generateSalesTrendData(orders, pastDays);
+  
+  let salesSum = 0;
+  let ordersSum = 0;
+  let salesGrowth = 0;
+  let ordersGrowth = 0;
+  
+  if (pastData.length > 1) {
+    for (let i = 1; i < pastData.length; i++) {
+      salesSum += pastData[i].sales;
+      ordersSum += pastData[i].orders;
+    }
+    
+    const avgDailySales = salesSum / (pastData.length - 1);
+    const avgDailyOrders = ordersSum / (pastData.length - 1);
+    
+    salesGrowth = avgDailySales * 0.03;
+    ordersGrowth = avgDailyOrders * 0.03;
+  }
   
   const lastPastDataPoint = pastData[pastData.length - 1];
   
-  let futureData = Array.from({ length: futureDays }).map((_, i) => {
+  const futureData = Array.from({ length: futureDays }).map((_, i) => {
     const date = addDays(today, i + 1);
-    const predicted = i === 0 
+    const prevPredictedSales = i === 0 
       ? lastPastDataPoint.sales 
-      : Math.floor(Math.random() * 300) + 100;
-    const predictedOrders = i === 0 
+      : (pastData[pastData.length - 1].sales + salesGrowth * i);
+    
+    const prevPredictedOrders = i === 0 
       ? lastPastDataPoint.orders
-      : Math.floor(Math.random() * 20) + 5;
+      : (pastData[pastData.length - 1].orders + ordersGrowth * i);
       
     return {
       date: format(date, 'MMM dd'),
-      predicted,
-      predictedOrders,
+      predicted: Math.round(prevPredictedSales * (1 + 0.03)),
+      predictedOrders: Math.round(prevPredictedOrders * (1 + 0.03)),
       isPast: false,
     };
   });
   
-  return [...pastData, ...futureData];
+  const markedPastData = pastData.map(item => ({
+    ...item,
+    isPast: true,
+  }));
+  
+  return [...markedPastData, ...futureData];
 };
 
 const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
@@ -110,6 +145,7 @@ const Dashboard = () => {
   const { orders, loading: ordersLoading, updateOrderStatus } = useOrders();
   const billingInfo = useBillingInfo(orders);
   const navigate = useNavigate();
+  
   const [showQRCode, setShowQRCode] = useState(false);
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d');
   const [chartType, setChartType] = useState<'revenue' | 'orders'>('revenue');
@@ -119,7 +155,7 @@ const Dashboard = () => {
   const [editingStallAddress, setEditingStallAddress] = useState(false);
   const [stallAddress, setStallAddress] = useState('');
   
-  const [combinedSalesData, setCombinedSalesData] = useState(generateSalesPredictionData(6, 7));
+  const [combinedSalesData, setCombinedSalesData] = useState<any[]>([]);
   
   useEffect(() => {
     if (user) {
@@ -129,15 +165,13 @@ const Dashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    let pastDays = 6;
-    let futureDays = 7;
-    if (timeRange === '30d') {
-      pastDays = 20;
-      futureDays = 10;
+    if (!ordersLoading && orders.length > 0) {
+      let pastDays = timeRange === '7d' ? 6 : 20;
+      let futureDays = timeRange === '7d' ? 7 : 10;
+      
+      setCombinedSalesData(generateSalesPredictionData(orders, pastDays, futureDays));
     }
-    
-    setCombinedSalesData(generateSalesPredictionData(pastDays, futureDays));
-  }, [timeRange]);
+  }, [timeRange, orders, ordersLoading]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -145,21 +179,15 @@ const Dashboard = () => {
     }
   }, [authLoading, user, navigate]);
 
-  const totalRevenueToday = orders
-    .filter(order => {
-      const orderDate = new Date(order.createdAt);
-      const today = startOfDay(new Date());
-      return orderDate >= today;
-    })
-    .reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalRevenueToday = billingInfo.todayRevenue;
     
-  const pendingOrders = orders.filter(order => order.status === 'pending');
+  const newOrders = orders.filter(order => order.status === 'new' || order.status === 'pending');
   const preparingOrders = orders.filter(order => order.status === 'preparing');
   const readyOrders = orders.filter(order => order.status === 'ready');
   const completedOrders = orders.filter(order => order.status === 'completed');
   const cancelledOrders = orders.filter(order => order.status === 'cancelled');
   
-  const recentPendingOrders = pendingOrders.slice(0, 3);
+  const recentPendingOrders = newOrders.slice(0, 3);
   const recentPreparingOrders = preparingOrders.slice(0, 3);
   const recentReadyOrders = readyOrders.slice(0, 3);
   const recentCompletedOrders = completedOrders.slice(0, 3);
@@ -499,7 +527,7 @@ const Dashboard = () => {
                   <span className="text-2xl font-bold">S${totalRevenueToday.toFixed(2)}</span>
                   <div className="text-xs text-green-500 font-medium flex items-center">
                     <TrendingUp className="h-3 w-3 mr-1" />
-                    +12% from yesterday
+                    Today's completed orders: {newOrders.length}
                   </div>
                 </div>
               </CardContent>
@@ -512,7 +540,7 @@ const Dashboard = () => {
                     <span className="text-muted-foreground text-sm">New Orders</span>
                     <Clock className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span className="text-2xl font-bold">{pendingOrders.length}</span>
+                  <span className="text-2xl font-bold">{newOrders.length}</span>
                   <Link 
                     to="/hawker/operation-mode" 
                     className="text-xs text-primary hover:underline flex items-center"
@@ -552,7 +580,7 @@ const Dashboard = () => {
             <CardContent>
               <Tabs defaultValue="pending">
                 <TabsList className="mb-4">
-                  <TabsTrigger value="pending">New ({pendingOrders.length})</TabsTrigger>
+                  <TabsTrigger value="pending">New ({newOrders.length})</TabsTrigger>
                   <TabsTrigger value="preparing">Preparing ({preparingOrders.length})</TabsTrigger>
                   <TabsTrigger value="ready">Ready ({readyOrders.length})</TabsTrigger>
                   <TabsTrigger value="cancelled">Cancelled ({cancelledOrders.length})</TabsTrigger>

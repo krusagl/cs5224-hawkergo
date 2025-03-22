@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -70,6 +71,7 @@ const OperationMode = () => {
 
   if (!user) return null;
 
+  // Filter orders by status consistently with Dashboard
   const allOrders = filteredOrders;
   const newOrders = filteredOrders.filter(order => order.status === 'new' || order.status === 'pending');
   const preparingOrders = filteredOrders.filter(order => order.status === 'preparing');

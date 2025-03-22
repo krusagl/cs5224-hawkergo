@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, startOfDay } from 'date-fns';
 import { Order } from './useOrders';
 
 interface BillingInfo {
@@ -9,6 +9,7 @@ interface BillingInfo {
   percentageUsed: number;
   remainingFree: number;
   transactionFee: number;
+  todayRevenue: number;
 }
 
 export const useBillingInfo = (orders: Order[]) => {
@@ -17,7 +18,8 @@ export const useBillingInfo = (orders: Order[]) => {
     freeThreshold: 2000, // S$2,000 free threshold
     percentageUsed: 0,
     remainingFree: 2000,
-    transactionFee: 0
+    transactionFee: 0,
+    todayRevenue: 0
   });
 
   useEffect(() => {
@@ -26,8 +28,9 @@ export const useBillingInfo = (orders: Order[]) => {
       const now = new Date();
       const monthStart = startOfMonth(now);
       const monthEnd = endOfMonth(now);
+      const todayStart = startOfDay(now);
 
-      // Filter completed orders for the current month and calculate total amount
+      // Filter completed/ready paid orders for the current month and calculate total amount
       const completedOrdersThisMonth = orders.filter(order => {
         const orderDate = new Date(order.createdAt);
         return (
@@ -37,8 +40,23 @@ export const useBillingInfo = (orders: Order[]) => {
         );
       });
 
+      // Calculate today's revenue from completed/ready paid orders
+      const todayCompletedOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        return (
+          (order.status === 'completed' || order.status === 'ready') && 
+          order.paymentStatus === 'paid' &&
+          orderDate >= todayStart
+        );
+      });
+
       const totalAmount = completedOrdersThisMonth.reduce(
         (sum, order) => sum + order.totalAmount, 
+        0
+      );
+
+      const todayRevenue = todayCompletedOrders.reduce(
+        (sum, order) => sum + order.totalAmount,
         0
       );
 
@@ -57,7 +75,8 @@ export const useBillingInfo = (orders: Order[]) => {
         freeThreshold,
         percentageUsed: Math.min(100, percentageUsed),
         remainingFree,
-        transactionFee
+        transactionFee,
+        todayRevenue
       });
     };
 
