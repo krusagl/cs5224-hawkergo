@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Clock, CheckCircle, AlertCircle, RefreshCw, ShoppingBag } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -190,7 +189,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 </Button>
               )}
               
-              {(order.status === 'pending' || order.status === 'preparing' || order.status === 'ready' || order.status === 'scheduled') && showCancelButton && (
+              {(order.status === 'new' || order.status === 'pending' || order.status === 'preparing' || order.status === 'ready' || order.status === 'scheduled') && showCancelButton && (
                 <Button 
                   variant="outline" 
                   className="w-full text-destructive hover:bg-destructive/10"

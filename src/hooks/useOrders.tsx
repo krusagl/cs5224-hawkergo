@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { format, addHours, subHours, addMinutes } from 'date-fns';
 import { orderAPI, stallAPI, Order as ApiOrder, OrderItem as ApiOrderItem } from '@/services/api';
@@ -18,7 +19,7 @@ export interface Order {
   customerName: string;
   hawkerId: string;
   items: OrderItem[];
-  status: 'new' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'scheduled';
+  status: 'new' | 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'scheduled';
   createdAt: string;
   updatedAt: string;
   totalAmount: number;
@@ -65,7 +66,6 @@ const generateMockOrders = (hawkerId: string, isDemo: boolean = true): Order[] =
     { menuItemId: '4', name: 'Laksa', price: 6 },
   ];
 
-  const statuses: Order['status'][] = ['pending', 'preparing', 'ready', 'completed', 'cancelled', 'scheduled'];
   const customerNames = ['John Tan', 'Mary Lim', 'David Ng', 'Sarah Wong', 'Michael Teo', 'Lisa Chen'];
   
   return Array.from({ length: 15 }).map((_, index) => {
@@ -92,8 +92,8 @@ const generateMockOrders = (hawkerId: string, isDemo: boolean = true): Order[] =
     // Generate status based on time (older orders are more likely to be completed)
     let status: Order['status'];
     if (index < 3) {
-      // First few orders are pending
-      status = 'pending';
+      // First few orders are new (replacing pending)
+      status = 'new';
     } else if (index < 6) {
       // Next few are preparing
       status = 'preparing';

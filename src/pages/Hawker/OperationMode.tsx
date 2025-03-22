@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -27,10 +26,8 @@ const OperationMode = () => {
   }, [authLoading, user, navigate]);
 
   useEffect(() => {
-    // Apply filtering and searching
     let result = [...orders];
     
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -74,7 +71,6 @@ const OperationMode = () => {
   if (!user) return null;
 
   const allOrders = filteredOrders;
-  // Update to use 'new' instead of 'pending' status
   const newOrders = filteredOrders.filter(order => order.status === 'new' || order.status === 'pending');
   const preparingOrders = filteredOrders.filter(order => order.status === 'preparing');
   const readyOrders = filteredOrders.filter(order => order.status === 'ready');
