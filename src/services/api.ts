@@ -5,7 +5,7 @@
  * Replace the base URL with your actual API URL when deploying.
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.yourhawkerstall.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.yourhawkerstall.com';
 
 // Types
 export interface User {
