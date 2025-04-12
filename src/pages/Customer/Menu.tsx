@@ -328,60 +328,52 @@ const CustomerMenu = () => {
     return () => clearTimeout(updateStatusTimer);
   }, [orderId, orderStatus]);
 
-  const handlePlaceOrder = async () => {
-    if (!customerName.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide your name",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleCheckout = async () => {
+    if (!stallId) return;
 
-    if (!contactNumber.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide your contact number",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    setCheckoutLoading(true);
     try {
-      setCheckoutLoading(true);
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const result = await createOrder({
-        customerId: "guest",
+      // Create order data
+      const orderData = {
         customerName,
-        hawkerId: stallId || "",
-        items: cart,
-        status: "pending",
-        totalAmount: cartTotal,
-        estimatedReadyTime: new Date(
-          Date.now() + estimatedTime * 60000
-        ).toISOString(),
-        paymentStatus: "paid",
-        paymentMethod: selectedPaymentMethod,
+        customerContact: contactNumber,
+        orderDetails: cart.map(item => ({
+          menuItemName: item.name,
+          quantity: item.quantity
+        })),
+        orderTotalCost: cartTotal
+      };
+
+      // Call AWS API Gateway
+      const response = await fetch(`https://xatcwdmrsg.execute-api.ap-southeast-1.amazonaws.com/api/stalls/${stallId}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
       });
 
-      if (result.success) {
-        setOrderId(result.orderId);
-        setOrderPlaced(true);
-
-        toast({
-          title: "Order Placed Successfully",
-          description: "Your order has been sent to the hawker stall",
-        });
-      } else {
-        throw new Error("Failed to create order");
+      if (!response.ok) {
+        throw new Error('Failed to create order');
       }
+
+      const result = await response.json();
+      
+      setOrderId(result.orderID);
+      setOrderStatus('pending');
+      setOrderPlaced(true);
+      setCart([]);
+      setCheckoutOpen(false);
+      
+      toast({
+        title: "Order Placed!",
+        description: "Your order has been placed successfully.",
+      });
     } catch (error) {
-      console.error("Order placement error:", error);
+      console.error('Error creating order:', error);
       toast({
         title: "Error",
-        description: "Failed to place your order. Please try again.",
+        description: "Failed to place order. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -729,7 +721,7 @@ const CustomerMenu = () => {
                       <Button
                         className="w-full"
                         disabled={checkoutLoading}
-                        onClick={handlePlaceOrder}
+                        onClick={handleCheckout}
                       >
                         {checkoutLoading && (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
