@@ -8,7 +8,7 @@ interface StallProfileState {
   stall: Stall | null;
 }
 
-export const useStallProfile = (stallID?: string) => {
+export const useStallProfile = (stallID: string="001") => {
   const { user } = useAuth();
   const [state, setState] = useState<StallProfileState>({
     loading: true,

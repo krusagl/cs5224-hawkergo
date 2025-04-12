@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -15,32 +14,43 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const OperationMode = () => {
   const { user, loading: authLoading } = useAuth();
-  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders(user?.id);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [staticOrders, setStaticOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders(user?.id || '001');
 
+  // Auth state changes
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/hawker/login');
     }
   }, [authLoading, user, navigate]);
 
+  // Static orders loading
   useEffect(() => {
-    let result = [...orders];
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        order => 
-          order.customerName.toLowerCase().includes(query) ||
-          order.id.toLowerCase().includes(query) ||
-          order.items.some(item => item.name.toLowerCase().includes(query))
-      );
+    if (orders && orders.length > 0 && staticOrders.length === 0) {
+      setStaticOrders(orders);
+      setFilteredOrders(orders);
     }
-    
+  }, [orders, staticOrders.length]);
+
+  // Search filtering
+  useEffect(() => {
+    if (!searchQuery) {
+      setFilteredOrders(staticOrders);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const result = staticOrders.filter(
+      order => 
+        order.customerName.toLowerCase().includes(query) ||
+        order.id.toLowerCase().includes(query) ||
+        order.items.some(item => item.name.toLowerCase().includes(query))
+    );
     setFilteredOrders(result);
-  }, [orders, searchQuery]);
+  }, [searchQuery, staticOrders]);
 
   const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
     const result = await updateOrderStatus(orderId, status);

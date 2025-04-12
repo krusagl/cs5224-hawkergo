@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, addHours, subHours, addMinutes } from 'date-fns';
 import { orderAPI, stallAPI } from '../services/api';
@@ -73,13 +72,13 @@ const mapApiResponseToOrder = (apiOrder: any): Order => {
       price: apiOrder.orderTotalCost / apiOrder.orderDetails.reduce((sum: number, i: any) => sum + i.quantity, 0),
       quantity: item.quantity
     })),
-    status: apiOrder.orderStatus,
+    status: apiOrder.orderStatus.toLowerCase() === 'new' ? 'new' : apiOrder.orderStatus.toLowerCase() as any,
     createdAt: apiOrder.orderDateTime,
     updatedAt: apiOrder.orderDateTime,
     totalAmount: apiOrder.orderTotalCost,
     estimatedReadyTime: addMinutes(new Date(apiOrder.orderDateTime), 15).toISOString(),
-    paymentStatus: apiOrder.paymentStatus,
-    paymentMethod: apiOrder.paymentMethod
+    paymentStatus: apiOrder.paymentStatus.toLowerCase() as 'paid' | 'pending',
+    paymentMethod: apiOrder.paymentMethod.toLowerCase() as 'card' | 'qr' | 'cash'
   };
 };
 
@@ -151,7 +150,7 @@ const generateMockOrders = (hawkerId: string, isDemo: boolean = true): Order[] =
   });
 };
 
-export const useOrders = (hawkerId: string = '1') => {
+export const useOrders = (hawkerId: string = '001') => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -162,8 +161,8 @@ export const useOrders = (hawkerId: string = '1') => {
         
         const storedUser = localStorage.getItem('user');
         const user = storedUser ? JSON.parse(storedUser) : null;
-        const isDemo = user?.accountType === 'demo';
-        
+        //const isDemo = user?.accountType === 'demo';
+        const isDemo = false;
         if (isDemo) {
           // For demo accounts, use mock data
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -224,7 +223,8 @@ export const useOrders = (hawkerId: string = '1') => {
         };
       } else {
         // Real mode: update via API
-        await orderAPI.updateOrderStatus(orderId, newStatus);
+        const apiStatus = (newStatus.toLowerCase() === 'new' ? 'new' : newStatus.toLowerCase()) as Order['status'];
+        await orderAPI.updateOrderStatus(orderId, apiStatus);
         
         const updatedOrders = orders.map(order => {
           if (order.id === orderId) {
