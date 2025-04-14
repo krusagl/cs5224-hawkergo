@@ -1,69 +1,12 @@
-# Welcome to your Lovable project
+# HawkerGo - A Cloud-Based Order Management System for Singapore Hawker Stalls
 
-## Project info
+## CS5224 Cloud Computing Project
 
-**URL**: https://lovable.dev/projects/d078097a-ab13-4032-9dd7-231189aaa372
+## EXECUTIVE SUMMARY
+Hawker stall operators in Singapore face acute operational challenges that compromise both efficiency and profitability—particularly during peak hours. Long queues, manual cash transactions, and outdated menu systems overwhelm stall owners and diminish customer satisfaction. While several digital solutions exist, they either focus narrowly on payment or impose high commissions that deter adoption by smaller hawkers.
 
-## How can I edit this code?
+HawkerGo addresses these gaps with a cloud-native Software-as-a-Service (SaaS) platform tailored to the needs of the hawker community. Designed with simplicity and cost-efficiency in mind, HawkerGo enables stall operators to create and update digital menus, accept pre-paid orders via QR codes, and receive real-time order notifications—all through a mobile-responsive web interface. Customers benefit from shorter wait times, streamlined ordering, and cashless payment options.
 
-There are several ways of editing your application.
+The platform leverages AWS cloud services to ensure scalability, reliability, and minimal operational overhead. A freemium business model keeps barriers to entry low, charging a small fee only after a monthly transaction threshold is crossed. Compared to on-premise setups, the cloud architecture offers dramatic cost savings and logistical simplicity, making it well-suited for the compact and dynamic environment of hawker centres.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/d078097a-ab13-4032-9dd7-231189aaa372) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/d078097a-ab13-4032-9dd7-231189aaa372) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+HawkerGo is a lightweight operations management platform that helps hawkers make data-driven decisions without needing technical expertise. With intuitive features, scalable infrastructure, and low financial risk, HawkerGo presents a viable pathway to modernising Singapore’s traditional food stalls.
