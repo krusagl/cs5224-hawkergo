@@ -1,6 +1,6 @@
-import React from "react";
-import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,11 +16,59 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import StallProfile from "@/components/StallProfile";
 import AnimatedTransition from "@/components/ui/AnimatedTransition";
-import { UserCog, Store, Wallet } from "lucide-react";
+import { UserCog, Store, Wallet, Edit, Save, X, ArrowLeft } from "lucide-react";
+import { Textarea } from '@/components/ui/textarea';
 
 const Settings = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, updateProfile } = useAuth();
   const navigate = useNavigate();
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [stallName, setStallName] = useState('');
+  const [stallAddress, setStallAddress] = useState('');
+  const [stallDescription, setStallDescription] = useState('');
+
+  // Initialize state with user data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      setStallName(user.stallName || '');
+      setStallAddress(user.stallAddress || '');
+      setStallDescription(user.stallDescription || '');
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    try {
+      await updateProfile({
+        stallName,
+        stallAddress,
+        stallDescription,
+      });
+      
+      toast({
+        title: 'Success',
+        description: 'Stall information updated successfully',
+      });
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Update error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update stall information. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCancel = () => {
+    if (user) {
+      setStallName(user.stallName || '');
+      setStallAddress(user.stallAddress || '');
+      setStallDescription(user.stallDescription || '');
+    }
+    setIsEditing(false);
+  };
 
   React.useEffect(() => {
     if (!authLoading && !user) {
@@ -98,17 +146,87 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="stall">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/hawker/dashboard')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">Stall Settings</h1>
+            {!isEditing ? (
+              <Button 
+                onClick={() => setIsEditing(true)}
+                className="ml-auto"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Information
+              </Button>
+            ) : (
+              <div className="flex gap-2 ml-auto">
+                <Button variant="outline" onClick={handleCancel}>
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </Button>
+              </div>
+            )}
+          </div>
+
           <AnimatedTransition>
-            <StallProfile
-              stallId="001"
-              onProfileUpdated={() => {
-                toast({
-                  title: "Profile Updated",
-                  description:
-                    "Your stall profile has been updated successfully.",
-                });
-              }}
-            />
+            <Card>
+              <CardHeader>
+                <CardTitle>Stall Information</CardTitle>
+                <CardDescription>
+                  Manage your stall's basic information
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="font-medium">Stall Name</h3>
+                  {isEditing ? (
+                    <Input
+                      value={stallName}
+                      onChange={(e) => setStallName(e.target.value)}
+                      placeholder="Enter your stall name"
+                    />
+                  ) : (
+                    <p className="text-lg">{stallName || 'No stall name set'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-medium">Stall Address</h3>
+                  {isEditing ? (
+                    <Input
+                      value={stallAddress}
+                      onChange={(e) => setStallAddress(e.target.value)}
+                      placeholder="Enter your stall address"
+                    />
+                  ) : (
+                    <p className="text-lg">{stallAddress || 'No stall address set'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-medium">Stall Description</h3>
+                  {isEditing ? (
+                    <Textarea
+                      value={stallDescription}
+                      onChange={(e) => setStallDescription(e.target.value)}
+                      placeholder="Describe your stall and cuisine"
+                      rows={4}
+                    />
+                  ) : (
+                    <p className="text-lg whitespace-pre-wrap">{stallDescription || 'No stall description set'}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </AnimatedTransition>
         </TabsContent>
 

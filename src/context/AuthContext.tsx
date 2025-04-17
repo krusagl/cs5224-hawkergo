@@ -1,4 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { authAPI } from '@/services/api';
+import { userAPI } from '@/services/api';
 
 export interface User {
   id: string;
@@ -9,6 +11,7 @@ export interface User {
   stallAddress?: string;
   stallDescription?: string;
   stallLogo?: string;
+  stallId?: string;
   accountType?: 'demo' | 'regular' | 'premium' | 'admin';
   subscriptionStatus?: 'active' | 'inactive' | 'trial';
   subscriptionExpiry?: string;
@@ -18,8 +21,8 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, accountType?: 'demo' | 'regular' | 'premium' | 'admin') => Promise<void>;
-  register: (userData: Partial<User>, password: string) => Promise<void>;
+  login: (email: string, password: string, accountType?: 'demo' | 'regular' | 'premium' | 'admin') => Promise<User>;
+  register: (userData: Partial<User>, password: string) => Promise<User>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   hasActiveSubscription: () => boolean;
@@ -86,31 +89,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // });
       // const data = await response.json();
       
-      // For now, we'll simulate a successful login with mock data
-      const mockUser: User = {
-        id: '001',
-        email,
-        name: accountType || email.split('@')[0],
-        role: 'hawker',
-        stallName: accountType === 'demo' ? 'Ah Ming Noodles' : '',
-        stallAddress: accountType === 'demo' ? 'Maxwell Food Centre, #01-23' : '',
-        stallDescription: accountType === 'demo' ? 'Traditional Chinese noodles with the best ingredients since 1980' : '',
-        accountType: accountType || 'regular',
-        subscriptionStatus: accountType === 'premium' ? 'active' : 'inactive',
-        isFirstLogin: accountType !== 'demo',
-      };
-      
-      if (accountType === 'premium') {
-        // Set subscription expiry to 30 days from now
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + 30);
-        mockUser.subscriptionExpiry = expiryDate.toISOString();
+      // Handle demo account with mock data
+      if (accountType === 'demo') {
+        const mockUser: User = {
+          id: '1',
+          email,
+          name: 'Demo User',
+          role: 'hawker',
+          stallName: 'Ah Ming Noodles',
+          stallAddress: 'Maxwell Food Centre, #01-23',
+          stallDescription: 'Traditional Chinese noodles with the best ingredients since 1980',
+          accountType: 'demo',
+          subscriptionStatus: 'inactive',
+          isFirstLogin: false,
+        };
+        
+        setUser(mockUser);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        return mockUser;
       }
       
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      // Handle real authentication for all other accounts
+      const loginResponse = await authAPI.login(email, password);
+      
+      // Create user object from login response
+      const user: User = {
+        id: loginResponse.userID,
+        email,
+        name: loginResponse.userName,
+        role: accountType === 'admin' ? 'admin' : 'hawker',
+        accountType: accountType || 'regular',
+        subscriptionStatus: accountType === 'premium' ? 'active' : 'inactive',
+        isFirstLogin: true,
+      };
+      
+      // Set subscription expiry for premium accounts
+      if (accountType === 'premium') {
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
+        user.subscriptionExpiry = expiryDate.toISOString();
+      }
+      
+      // Set permanent active status for admin accounts
+      if (accountType === 'admin') {
+        user.subscriptionStatus = 'active';
+      }
+      
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      return user;
     } catch (error) {
       console.error('Login failed:', error);
+      // Throw error to be handled by the login component
       throw error;
     } finally {
       setLoading(false);
@@ -128,23 +158,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // });
       // const data = await response.json();
       
-      // For now, we'll simulate a successful registration
+      // 1. Create user account
+      const userResponse = await userAPI.createUser(
+        userData.name || '',
+        userData.email || '',
+        password
+      );
+      
+      // 2. Create stall for the user
+      const stallResponse = await userAPI.createStall(userResponse.userID, {
+        stallName: userData.stallName || '',
+        stallAddress: userData.stallAddress || '',
+        stallDescription: userData.stallDescription || '',
+      });
+      
+      // 3. Create user object with all the data
       const newUser: User = {
-        id: Math.random().toString(36).substring(2, 9),
+        id: userResponse.userID,
         email: userData.email || '',
         name: userData.name || '',
-        role: userData.role || 'hawker',
+        role: 'hawker',
         stallName: userData.stallName || '',
         stallAddress: userData.stallAddress || '',
         stallDescription: userData.stallDescription || '',
         stallLogo: userData.stallLogo || '',
+        stallId: stallResponse.stallID,
         accountType: 'regular',
         subscriptionStatus: 'inactive',
         isFirstLogin: true,
       };
       
+      // 4. Update state and storage
       setUser(newUser);
       localStorage.setItem('user', JSON.stringify(newUser));
+      
+      return newUser;
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;

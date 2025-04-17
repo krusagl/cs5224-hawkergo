@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -10,6 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ArrowLeft, ArrowRight, Loader2, Upload } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
+import { LoginResponse } from '@/services/api';
+import { userAPI } from '@/services/api';
 
 const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -29,22 +30,24 @@ const Login = () => {
   const handleLoginWithPreset = async (preset: 'demo' | 'admin') => {
     try {
       setLoading(true);
-      let presetEmail, presetPassword;
       
-      if (preset === 'demo') {
-        presetEmail = 'demo@hawkergo.com';
-        presetPassword = 'demo123';
-      } else {
-        presetEmail = 'admin@hawkergo.com';
-        presetPassword = 'admin123';
-      }
+      // Create mock user data based on preset
+      const mockUser = {
+        email: preset === 'demo' ? 'demo@hawkergo.com' : 'admin@hawkergo.com',
+        name: preset === 'demo' ? 'Demo User' : 'Admin User',
+        role: preset === 'admin' ? 'admin' : 'hawker'
+      };
       
-      await login(presetEmail, presetPassword, preset);
+      // Store mock user data
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      
       toast({
         title: 'Success',
         description: `Logged in as ${preset} account. Redirecting to dashboard...`,
       });
-      navigate('/hawker/dashboard');
+      
+      const dashboardPath = preset === 'admin' ? '/admin/dashboard' : '/hawker/dashboard';
+      navigate(dashboardPath);
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -84,17 +87,49 @@ const Login = () => {
     
     try {
       setLoading(true);
-      await login(email, password);
+      console.log('Starting login process...');
+      
+      const response = (await login(email, password) as unknown) as LoginResponse;
+      console.log('Login successful, response:', response);
+      
+      if (!response || !response.name) {
+        throw new Error('Invalid response from server');
+      }
+      
+      // Store user data in localStorage
+      const user = {
+        email: email,
+        name: response.userName,
+        role: 'hawker'
+      };
+      localStorage.setItem('user', JSON.stringify(user));
+      
       toast({
         title: 'Success',
-        description: 'Logged in successfully. Redirecting to dashboard...',
+        description: `Welcome back, ${user.name}! Redirecting to dashboard...`,
       });
-      navigate('/hawker/dashboard');
+      
+      // Navigate based on the role from the API response
+      const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/hawker/dashboard';
+      console.log('Redirecting to:', dashboardPath);
+      navigate(dashboardPath);
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error details:', error);
+      let errorMessage = 'Invalid email or password. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('Unable to connect')) {
+          errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+        } else if (error.message.includes('Internal server error')) {
+          errorMessage = 'Server error. Please try again later.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: 'Error',
-        description: 'Invalid email or password. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -102,7 +137,7 @@ const Login = () => {
     }
   };
 
-  const handleRegisterStepOne = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRegisterStepOne = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -114,7 +149,33 @@ const Login = () => {
       return;
     }
 
-    setStep(2);
+    try {
+      setLoading(true);
+      
+      // Check if email already exists
+      const result = await userAPI.checkEmailExists(email);
+      
+      if (result.exists) {
+        toast({
+          title: 'Error',
+          description: 'This email is already registered. Please use a different email or try logging in.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // If email doesn't exist, proceed to step 2
+      setStep(2);
+    } catch (error) {
+      console.error('Email check error:', error);
+      toast({
+        title: 'Error',
+        description: 'Unable to verify email. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegisterStepTwo = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -122,7 +183,9 @@ const Login = () => {
 
     try {
       setLoading(true);
-      await register({
+      
+      // Call register function with all user data
+      const user = await register({
         name,
         email,
         role: 'hawker',
@@ -136,12 +199,26 @@ const Login = () => {
         title: 'Success',
         description: 'Account created successfully. Redirecting to dashboard...',
       });
+      
+      // Navigate to dashboard
       navigate('/hawker/dashboard');
     } catch (error) {
       console.error('Registration error:', error);
+      let errorMessage = 'Failed to create account. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('Unable to connect')) {
+          errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+        } else if (error.message.includes('Internal server error')) {
+          errorMessage = 'Server error. Please try again later.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: 'Error',
-        description: 'Failed to create account. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

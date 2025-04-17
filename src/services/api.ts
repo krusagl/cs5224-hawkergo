@@ -60,6 +60,12 @@ export interface Order {
   amount: number;
 }
 
+export interface LoginResponse {
+  userID: string;
+  userName: string;
+  message: string;
+}
+
 // Helper function for making API requests
 async function fetchAPI<T>(
   endpoint: string,
@@ -83,6 +89,8 @@ async function fetchAPI<T>(
   }
 
   try {
+    // const isUserEndpoint = endpoint.startsWith("/api/login") || endpoint.startsWith("/api/users");
+    // const baseUrl = isUserEndpoint? `${API_BASE_URL}/dev`: API_BASE_URL;
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
     if (!response.ok) {
@@ -112,6 +120,16 @@ async function fetchAPI<T>(
 
 // Mock data function for development/testing
 function getMockData<T>(endpoint: string, method: string): T {
+  // Check if it's a login request
+  if (endpoint === "/api/login" && method === "POST") {
+    const mockResponse: LoginResponse = {
+      userID: "mock-user-123",
+      userName: "Mock User",
+      message: "Login successful"
+    };
+    return mockResponse as unknown as T;
+  }
+
   // Check if it's a stall profile request
   if (endpoint.match(/\/api\/stalls\/.*/) && method === "GET") {
     const stallID = endpoint.split("/").pop() || "1";
@@ -155,6 +173,13 @@ export const userAPI = {
       email,
       password,
     }),
+
+  // Check if email exists
+  checkEmailExists: (email: string) =>
+    fetchAPI<{ exists: boolean }>(
+      `/api/users/email/${email}`,
+      "GET"
+    ),
 
   // 2. Get a user profile (Jiayang)
   getUserProfile: (userID: string) =>
@@ -289,8 +314,18 @@ export const orderAPI = {
     ),
 };
 
+// Auth API endpoints
+export const authAPI = {
+  login: (email: string, password: string): Promise<LoginResponse> =>
+    fetchAPI<LoginResponse>("/api/login", "POST", {
+      email,
+      password,
+    }),
+};
+
 export default {
   user: userAPI,
   stall: stallAPI,
   order: orderAPI,
+  auth: authAPI,
 };
