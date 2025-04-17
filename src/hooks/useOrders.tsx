@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { format, addHours, subHours, addMinutes, isSameDay, startOfDay, parse } from 'date-fns';
-import { orderAPI, stallAPI, Order as ApiOrder, OrderItem as ApiOrderItem } from '@/services/api';
-import { useAuth } from '@/context/AuthContext';
+import { orderAPI, stallAPI, Order as ApiOrder, OrderItem as ApiOrderItem } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import React from 'react';
 
 // Mapping our internal Order type to match the API's Order type
 export interface OrderItem {
@@ -250,63 +250,67 @@ const mapOrderToApiOrder = (order: CreateOrderParams): {
 
 export const useOrders = (hawkerId?: string) => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);  // Start as true
   const { user } = useAuth();
 
-  const stallId = hawkerId || user?.id || '1';
+  // Use a stable stallId that doesn't change on re-renders
+  const stallId = React.useMemo(() => hawkerId || user?.id || '001', [hawkerId, user?.id]);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const loadOrders = async () => {
       try {
         setLoading(true);
         
-        // Check if this is a demo account from localStorage
         const storedUser = localStorage.getItem('user');
         const user = storedUser ? JSON.parse(storedUser) : null;
         const isDemo = user?.accountType === 'demo';
         
         if (isDemo) {
-          // Generate mock orders for demo accounts only - now with consistent data
           const mockOrders = generateMockOrders(stallId, isDemo);
-          setOrders(mockOrders);
+          if (isMounted) {
+            setOrders(mockOrders);
+            setLoading(false);
+          }
         } else {
           try {
-            // Fetch real orders from the API
             const response = await stallAPI.getOrders(stallId);
             const apiOrders = response.orders;
-            
-            // Map API orders to our internal Order type
             const mappedOrders = apiOrders.map(mapApiOrderToOrder);
-            setOrders(mappedOrders);
+            if (isMounted) {
+              setOrders(mappedOrders);
+              setLoading(false);
+            }
           } catch (error) {
-            console.error('Error fetching orders:', error);
-            // Fallback to empty orders for new users
-            setOrders([]);
+            if (isMounted) {
+              setLoading(false);
+            }
           }
         }
       } catch (error) {
-        console.error('Error loading orders:', error);
-        setOrders([]);
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
     loadOrders();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [stallId]);
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']): Promise<UpdateOrderStatusResult> => {
     try {
-      // Check if this is a demo account
       const storedUser = localStorage.getItem('user');
       const user = storedUser ? JSON.parse(storedUser) : null;
       const isDemo = user?.accountType === 'demo';
       
       if (isDemo) {
-        // Update order status locally for demo accounts
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Update order status
         const updatedOrders = orders.map(order => {
           if (order.id === orderId) {
             return {
@@ -325,11 +329,9 @@ export const useOrders = (hawkerId?: string) => {
           order: updatedOrders.find(order => order.id === orderId)
         };
       } else {
-        // Update order status through the API
         const apiStatus = newStatus === 'new' ? 'new' : newStatus;
         await orderAPI.updateOrderStatus(orderId, apiStatus);
         
-        // Update local state after API call succeeds
         const updatedOrders = orders.map(order => {
           if (order.id === orderId) {
             return {
@@ -349,7 +351,6 @@ export const useOrders = (hawkerId?: string) => {
         };
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
       return {
         success: false,
         message: 'Failed to update order status'
@@ -359,16 +360,13 @@ export const useOrders = (hawkerId?: string) => {
   
   const createOrder = async (orderData: CreateOrderParams): Promise<CreateOrderResult> => {
     try {
-      // Check if this is a demo account
       const storedUser = localStorage.getItem('user');
       const user = storedUser ? JSON.parse(storedUser) : null;
       const isDemo = user?.accountType === 'demo';
       
       if (isDemo) {
-        // Create new order locally for demo accounts
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Create new order
         const now = new Date();
         const newOrder: Order = {
           id: `ORD${Math.floor(Math.random() * 90000) + 10000}`,
@@ -384,11 +382,9 @@ export const useOrders = (hawkerId?: string) => {
           orderId: newOrder.id
         };
       } else {
-        // Create new order through the API
         const apiOrderData = mapOrderToApiOrder(orderData);
         const response = await stallAPI.createOrder(orderData.hawkerId, apiOrderData);
         
-        // Create new order with API response
         const now = new Date();
         const newOrder: Order = {
           id: response.orderID,
@@ -405,7 +401,6 @@ export const useOrders = (hawkerId?: string) => {
         };
       }
     } catch (error) {
-      console.error('Error creating order:', error);
       return {
         success: false,
         message: 'Failed to create order'

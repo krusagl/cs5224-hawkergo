@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
 export interface User {
@@ -89,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // For now, we'll simulate a successful login with mock data
       const mockUser: User = {
-        id: '1',
+        id: '001',
         email,
         name: accountType || email.split('@')[0],
         role: 'hawker',

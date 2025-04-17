@@ -520,7 +520,9 @@ const Dashboard = () => {
             </Button>
             <Button
               variant="default"
-              onClick={() => navigate("/hawker/operation-mode")}
+              onClick={() => {
+                window.location.href = '/hawker/operation-mode';
+              }}
               className="w-full sm:w-auto"
             >
               <ToggleRight className="mr-2 h-4 w-4" />
