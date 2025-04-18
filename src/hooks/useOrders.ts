@@ -196,54 +196,27 @@ export const useOrders = (hawkerId: string = '001') => {
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']): Promise<UpdateOrderStatusResult> => {
     try {
-      const storedUser = localStorage.getItem('user');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-      const isDemo = user?.accountType === 'demo';
+      // Real mode: update via API
+      await orderAPI.updateOrderStatus(orderId, newStatus);
       
-      if (isDemo) {
-        // Demo mode: update locally
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        const updatedOrders = orders.map(order => {
-          if (order.id === orderId) {
-            return {
-              ...order,
-              status: newStatus,
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return order;
-        });
-        
-        setOrders(updatedOrders);
-        
-        return {
-          success: true,
-          order: updatedOrders.find(order => order.id === orderId)
-        };
-      } else {
-        // Real mode: update via API
-        const apiStatus = (newStatus.toLowerCase() === 'new' ? 'new' : newStatus.toLowerCase()) as Order['status'];
-        await orderAPI.updateOrderStatus(orderId, apiStatus);
-        
-        const updatedOrders = orders.map(order => {
-          if (order.id === orderId) {
-            return {
-              ...order,
-              status: newStatus,
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return order;
-        });
-        
-        setOrders(updatedOrders);
-        
-        return {
-          success: true,
-          order: updatedOrders.find(order => order.id === orderId)
-        };
-      }
+      // After successful API call, update local state
+      const updatedOrders = orders.map(order => {
+        if (order.id === orderId) {
+          return {
+            ...order,
+            status: newStatus,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return order;
+      });
+      
+      setOrders(updatedOrders);
+      
+      return {
+        success: true,
+        order: updatedOrders.find(order => order.id === orderId)
+      };
     } catch (error) {
       console.error('Error updating order status:', error);
       return {
@@ -252,7 +225,17 @@ export const useOrders = (hawkerId: string = '001') => {
       };
     }
   };
-  
+
+  const getOrderDetail = async (orderId: string): Promise<Order | null> => {
+    try {
+      const apiOrder = await orderAPI.getOrderDetail(orderId);
+      return mapApiResponseToOrder(apiOrder);
+    } catch (error) {
+      console.error('Error fetching order details:', error);
+      return null;
+    }
+  };
+
   const createOrder = async (orderData: CreateOrderParams): Promise<CreateOrderResult> => {
     try {
       const storedUser = localStorage.getItem('user');
@@ -324,6 +307,7 @@ export const useOrders = (hawkerId: string = '001') => {
     orders,
     loading,
     updateOrderStatus,
+    getOrderDetail,
     createOrder
   };
 };
