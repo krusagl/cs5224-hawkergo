@@ -28,14 +28,49 @@ const Settings = () => {
   const [stallAddress, setStallAddress] = useState('');
   const [stallDescription, setStallDescription] = useState('');
 
+  // 账户设置状态
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [accountLoading, setAccountLoading] = useState(false);
+
   // Initialize state with user data when component mounts or user changes
   useEffect(() => {
     if (user) {
+      console.log('Setting initial values from user:', user);
+      setUserName(user.name || '');
+      setUserEmail(user.email || '');
       setStallName(user.stallName || '');
       setStallAddress(user.stallAddress || '');
       setStallDescription(user.stallDescription || '');
     }
   }, [user]);
+
+  // 更新账户信息
+  const handleUpdateAccount = async () => {
+    try {
+      setAccountLoading(true);
+      console.log('Updating account with:', { name: userName, email: userEmail });
+      
+      await updateProfile({
+        name: userName,
+        email: userEmail,
+      });
+      
+      toast({
+        title: "Success",
+        description: "Account information updated successfully.",
+      });
+    } catch (error) {
+      console.error('Account update error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update account information. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAccountLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -121,23 +156,28 @@ const Settings = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" defaultValue={user.name} />
+                  <Input 
+                    id="name" 
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue={user.email} />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                  />
                 </div>
               </CardContent>
               <CardFooter>
                 <Button
-                  onClick={() =>
-                    toast({
-                      title: "Not implemented",
-                      description:
-                        "Account update functionality is not yet implemented.",
-                    })
-                  }
+                  onClick={handleUpdateAccount}
+                  disabled={accountLoading}
                 >
+                  {accountLoading && <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>}
                   Save Changes
                 </Button>
               </CardFooter>

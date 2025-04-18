@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI } from '@/services/api';
-import { userAPI } from '@/services/api';
+import { authAPI, userAPI, stallAPI } from '@/services/api';
 
 export interface User {
   id: string;
@@ -102,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           accountType: 'demo',
           subscriptionStatus: 'inactive',
           isFirstLogin: false,
+          stallId: 'demo-stall-1'
         };
         
         setUser(mockUser);
@@ -110,7 +110,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Handle real authentication for all other accounts
+      console.log('Calling login API with:', email, password);
       const loginResponse = await authAPI.login(email, password);
+      console.log('Login API response:', loginResponse);
       
       // Create user object from login response
       const user: User = {
@@ -122,6 +124,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         subscriptionStatus: accountType === 'premium' ? 'active' : 'inactive',
         isFirstLogin: true,
       };
+      
+      // Try to get user's stall information
+      // ✅ If stallID is returned, fetch stall details
+      if (loginResponse.stallID) {
+        user.stallId = loginResponse.stallID;
+        try {
+          const stall = await stallAPI.getStallProfile(loginResponse.stallID);
+          user.stallName = stall.stallName;
+          user.stallAddress = stall.stallAddress;
+          user.stallDescription = stall.stallDescription;
+          // user.stallLogo = stall.stallLogo;
+        } catch (err) {
+          console.warn('Failed to load stall info:', err);
+        }
+      }
       
       // Set subscription expiry for premium accounts
       if (accountType === 'premium') {
@@ -135,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user.subscriptionStatus = 'active';
       }
       
+      console.log('Final user object after login:', user);
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       return user;
@@ -220,15 +238,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       if (!user) throw new Error('Not authenticated');
       
-      // In a real app, this would be a fetch call to your profile update API
-      // await fetch(API_ENDPOINTS.PROFILE, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data)
-      // });
-      
-      // Update user data
+      // Create a copy of the user data that we'll update
       const updatedUser = { ...user, ...data };
+      console.log('Updating user profile with:', data);
+      
+      // Track if we've made any successful API calls
+      let apiUpdateSuccessful = false;
+      
+      // Update user profile in the database if name or email changed
+      if (data.name || data.email) {
+        console.log('⏫ Sending user profile update:', data);
+        await userAPI.updateUserProfile(user.id, {
+          userName: data.name || user.name,
+          email: data.email || user.email
+        });
+        apiUpdateSuccessful = true;
+      }
+      
+      // Update stall information in the database if any stall data changed
+      if (user.stallId && (data.stallName || data.stallAddress || data.stallDescription)) {
+        try {
+          await stallAPI.updateStallProfile(user.stallId, {
+            stallName: data.stallName || user.stallName,
+            stallAddress: data.stallAddress || user.stallAddress,
+            stallDescription: data.stallDescription || user.stallDescription
+          });
+          apiUpdateSuccessful = true;
+          console.log('Stall profile updated successfully');
+        } catch (error) {
+          console.error('Failed to update stall profile:', error);
+          throw new Error('Failed to update stall profile');
+        }
+      }
       
       // If this was the first login, and the user is updating their profile, 
       // set isFirstLogin to false
@@ -236,8 +277,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updatedUser.isFirstLogin = false;
       }
       
+      // Always update local state so the UI shows the changes
+      // This ensures a better user experience even if the API call fails
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      console.log('User data updated locally:', updatedUser);
     } catch (error) {
       console.error('Profile update failed:', error);
       throw error;

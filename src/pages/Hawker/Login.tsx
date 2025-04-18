@@ -98,9 +98,10 @@ const Login = () => {
       
       // Store user data in localStorage
       const user = {
+        id: response.userID,
         email: email,
         name: response.userName,
-        role: 'hawker'
+        role: 'hawker',
       };
       localStorage.setItem('user', JSON.stringify(user));
       

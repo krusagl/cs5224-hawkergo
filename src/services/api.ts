@@ -120,6 +120,8 @@ async function fetchAPI<T>(
 
 // Mock data function for development/testing
 function getMockData<T>(endpoint: string, method: string): T {
+  console.log('Getting mock data for:', endpoint, method);
+  
   // Check if it's a login request
   if (endpoint === "/api/login" && method === "POST") {
     const mockResponse: LoginResponse = {
@@ -127,22 +129,40 @@ function getMockData<T>(endpoint: string, method: string): T {
       userName: "Mock User",
       message: "Login successful"
     };
+    console.log('Returning mock login response:', mockResponse);
     return mockResponse as unknown as T;
   }
 
   // Check if it's a stall profile request
   if (endpoint.match(/\/api\/stalls\/.*/) && method === "GET") {
     const stallID = endpoint.split("/").pop() || "1";
+    console.log('Getting mock stall data for ID:', stallID);
 
-    const mockStall: Stall = {
-      stallID: stallID,
-      userID: "001",
-      stallName: "Mock Hawker Stall",
-      stallAddress: "123 Mock Street, #01-45",
-      stallDescription: "This is a mock stall for development",
-      stallLogo: "/placeholder.svg",
-    };
+    // Create different mock stalls based on ID
+    let mockStall: Stall;
+    
+    if (stallID === 'stall-mock-user-123') {
+      // This is for the mock user we create during login
+      mockStall = {
+        stallID: stallID,
+        userID: "mock-user-123",
+        stallName: "Food Haven",
+        stallAddress: "Maxwell Food Centre, #01-45",
+        stallDescription: "Serving the best local dishes since 1990",
+        stallLogo: "/placeholder.svg",
+      };
+    } else {
+      mockStall = {
+        stallID: stallID,
+        userID: "001",
+        stallName: "Mock Hawker Stall",
+        stallAddress: "123 Mock Street, #01-45",
+        stallDescription: "This is a mock stall for development",
+        stallLogo: "/placeholder.svg",
+      };
+    }
 
+    console.log('Returning mock stall:', mockStall);
     return mockStall as unknown as T;
   }
 
@@ -152,10 +172,35 @@ function getMockData<T>(endpoint: string, method: string): T {
 
     const mockResponse = {
       stallID: stallID,
-      message: "Stall profile updated",
+      message: "Stall profile updated successfully",
     };
 
     return mockResponse as unknown as T;
+  }
+  
+  // For user profile update
+  if (endpoint.match(/\/api\/users\/.*/) && method === "PUT") {
+    const userID = endpoint.split("/").pop() || "mock-user-123";
+
+    const mockResponse = {
+      userID: userID,
+      message: "User profile updated successfully",
+    };
+
+    return mockResponse as unknown as T;
+  }
+  
+  // For user profile get
+  if (endpoint.match(/\/api\/users\/.*/) && method === "GET" && !endpoint.includes("/email/")) {
+    const userID = endpoint.split("/").pop() || "mock-user-123";
+
+    const mockUser: User = {
+      userID: userID,
+      userName: "Mock User",
+      email: "mock@example.com",
+    };
+
+    return mockUser as unknown as T;
   }
 
   // Add more mock data for other endpoints as needed
