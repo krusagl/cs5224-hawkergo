@@ -33,6 +33,7 @@ import {
   Brain,
   Sparkles,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import {
   format,
@@ -71,6 +72,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { stallAPI } from "@/services/api";
 
 const generateSalesTrendData = (orders: Order[], days: number = 7) => {
   const today = new Date();
@@ -189,14 +191,12 @@ const CustomTooltip = ({
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
-  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders(user?.stallId || user?.id );
-  const {
-    stall,
-    loading: stallLoading,
-    updateStallProfile,
-  } = useStallProfile(user?.stallId);
-  const billingInfo = useBillingInfo(orders);
   const navigate = useNavigate();
+  const { stall, loading: stallLoading, updateStallProfile } = useStallProfile(user?.stallId);
+  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders(user?.stallId);
+  const billingInfo = useBillingInfo(orders);
+  const [menuItemsCount, setMenuItemsCount] = useState<number>(0);
+  const [loadingMenuItems, setLoadingMenuItems] = useState(true);
 
   const [showQRCode, setShowQRCode] = useState(false);
   const [timeRange, setTimeRange] = useState<"7d" | "30d">("7d");
@@ -252,6 +252,29 @@ const Dashboard = () => {
       });
     }
   }, [showQRCode, stall]);
+
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      if (!user?.stallId) return;
+      
+      try {
+        setLoadingMenuItems(true);
+        const response = await stallAPI.getMenuItems(user.stallId);
+        setMenuItemsCount(response.menuItems.length);
+      } catch (error) {
+        console.error('Failed to fetch menu items:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load menu items count',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoadingMenuItems(false);
+      }
+    };
+
+    fetchMenuItems();
+  }, [user?.stallId]);
 
   const totalRevenueToday = billingInfo.todayRevenue;
 
@@ -750,7 +773,11 @@ const Dashboard = () => {
                     <Utensils className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <span className="text-2xl font-bold">
-                    {uniqueMenuItemIds.length}
+                    {loadingMenuItems ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      menuItemsCount
+                    )}
                   </span>
                   <Link
                     to="/hawker/menu"

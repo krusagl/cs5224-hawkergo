@@ -86,7 +86,6 @@ async function fetchAPI<T>(
       ...(user?.id && { "Authorization": `Bearer ${user.id}` }),
     },
     mode: "cors",
-    credentials: "omit",
   };
 
   if (body) {

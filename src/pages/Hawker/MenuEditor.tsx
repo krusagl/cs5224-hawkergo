@@ -13,10 +13,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { Switch } from '@/components/ui/switch';
-import bcmImage from '@/assets/bak chor mee.jpg';
-import fnImage from '@/assets/fishball noodles.jpg';
-import fsImage from '@/assets/fishball soup.jpg';
-import laksaImage from '@/assets/laksa.jpg';
+import { stallAPI } from '@/services/api';
 
 interface MenuItem {
   id: string;
@@ -27,56 +24,55 @@ interface MenuItem {
   available: boolean;
 }
 
-const initialMenuItems: MenuItem[] = [
-  {
-    id: '1',
-    name: 'Fishball Noodles',
-    description: 'Delicious noodles served with handmade fishballs in a savory broth.',
-    price: 5,
-    image: fnImage,
-    available: true
-  },
-  {
-    id: '2',
-    name: 'Bak Chor Mee',
-    description: 'Minced pork noodles with black vinegar, chili, and various toppings.',
-    price: 5,
-    image: bcmImage,
-    available: true
-  },
-  {
-    id: '3',
-    name: 'Fishball Soup',
-    description: 'A light and tasty soup with handmade fishballs.',
-    price: 4,
-    image: fsImage,
-    available: true
-  },
-  {
-    id: '4',
-    name: 'Laksa',
-    description: 'Spicy noodle soup with coconut milk, prawns, and fish cake.',
-    price: 6,
-    image: laksaImage,
-    available: true
-  }
-];
-
 const MenuEditor = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [originalItem, setOriginalItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/hawker/login');
     }
   }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      if (!user?.stallId) return;
+      
+      try {
+        setLoading(true);
+        const response = await stallAPI.getMenuItems(user.stallId);
+        // Transform API response to match our MenuItem interface
+        const transformedItems: MenuItem[] = response.menuItems.map(item => ({
+          id: item.menuItemID,
+          name: item.menuItemName,
+          description: item.menuItemDescription,
+          price: item.menuItemPrice,
+          image: item.menuItemImage,
+          available: item.menuAvailability
+        }));
+        
+        setMenuItems(transformedItems);
+      } catch (error) {
+        console.error('Failed to fetch menu items:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load menu items. Please try again later.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuItems();
+  }, [user?.stallId]);
   
   const handleAddNewItem = () => {
     const newItem: MenuItem = {
@@ -111,7 +107,7 @@ const MenuEditor = () => {
   };
   
   const handleSaveItem = async () => {
-    if (!editingItem) return;
+    if (!editingItem || !user?.stallId) return;
     
     if (!editingItem.name.trim()) {
       toast({
@@ -134,9 +130,58 @@ const MenuEditor = () => {
     try {
       setIsSubmitting(true);
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      let imageUrl = editingItem.image;
       
+      // If the image is a base64 string (new upload), upload it to S3
+      if (editingItem.image && editingItem.image.startsWith('data:')) {
+        const timestamp = Date.now();
+        const filename = `${user.stallId}/${timestamp}-${editingItem.name.replace(/\s+/g, '-')}.jpg`;
+        
+        // Get presigned URL from API
+        const { uploadUrl, fileUrl } = await stallAPI.getUploadUrl({
+          filename,
+          contentType: 'image/jpeg'
+        });
+        
+        // Convert base64 to blob
+        const base64Data = editingItem.image.split(',')[1];
+        const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(res => res.blob());
+        
+        // Upload to S3 using presigned URL
+        const response = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: blob,
+          headers: {
+            'Content-Type': 'image/jpeg',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        imageUrl = fileUrl;
+      }
+      
+      // Create or update the menu item
+      const menuItemData = {
+        menuItemName: editingItem.name,
+        menuItemDescription: editingItem.description,
+        menuItemPrice: editingItem.price,
+        menuItemImage: imageUrl,
+        menuAvailability: editingItem.available
+      };
+
+      if (originalItem) {
+        // Update existing item
+        await stallAPI.updateMenuItem(user.stallId, editingItem.id, menuItemData);
+      } else {
+        // Create new item
+        const response = await stallAPI.createMenuItem(user.stallId, menuItemData);
+        editingItem.id = response.menuItemID;
+      }
+      
+      // Update local state
       setMenuItems(prev => {
         const exists = prev.some(item => item.id === editingItem.id);
         if (exists) {
@@ -155,6 +200,7 @@ const MenuEditor = () => {
         description: 'Menu item has been saved successfully',
       });
     } catch (error) {
+      console.error('Error saving menu item:', error);
       toast({
         title: 'Error',
         description: 'Failed to save menu item. Please try again.',
@@ -230,12 +276,12 @@ const MenuEditor = () => {
     });
   };
 
-  if (authLoading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-gray-200 mb-4"></div>
-          <div className="h-4 w-32 bg-gray-200 rounded"></div>
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading menu items...</p>
         </div>
       </div>
     );
