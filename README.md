@@ -50,9 +50,9 @@ hawker-go/
 
 ### Customer Function
 
-1. Scan the QR code to access the demo stall's menu:
-   ![Stall QR Code](https://github.com/krusagl/cs5224-hawkergo/blob/main/public/stallQR.jpeg)
-
+ ![Stall QR Code](https://github.com/krusagl/cs5224-hawkergo/blob/main/public/stallQR.jpeg)
+ 
+1. Scan the QR code or via [Demo Order](https://id-preview--d078097a-ab13-4032-9dd7-231189aaa372.lovable.app/stall/1) to access the demo stall's menu:
 2. Browse the menu and add items to cart
 3. Proceed to checkout
 4. Enter customer details and payment information
