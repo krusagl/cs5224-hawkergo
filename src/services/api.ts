@@ -86,7 +86,6 @@ async function fetchAPI<T>(
       ...(user?.id && { "Authorization": `Bearer ${user.id}` }),
     },
     mode: "cors",
-    credentials: "omit",
   };
 
   if (body) {
@@ -352,6 +351,14 @@ export const stallAPI = {
     fetchAPI<{ stallID: string; orders: Order[] }>(
       `/api/stalls/${stallID}/orders`,
       "GET"
+    ),
+
+  // Get presigned URL for S3 upload
+  getUploadUrl: (data: { filename: string; contentType: string }) =>
+    fetchAPI<{ uploadUrl: string; fileUrl: string }>(
+      "/api/upload-image",
+      "POST",
+      data
     ),
 };
 

@@ -7,16 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Plus, Trash2, Save, ArrowLeft, Image as ImageIcon, 
+  Plus, Save, ArrowLeft, Image as ImageIcon, 
   DollarSign, Loader2, AlertCircle, Eye
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import AnimatedTransition from '@/components/ui/AnimatedTransition';
 import { Switch } from '@/components/ui/switch';
-import bcmImage from '@/assets/bak chor mee.jpg';
-import fnImage from '@/assets/fishball noodles.jpg';
-import fsImage from '@/assets/fishball soup.jpg';
-import laksaImage from '@/assets/laksa.jpg';
+import { stallAPI } from '@/services/api';
 
 interface MenuItem {
   id: string;
@@ -27,56 +24,55 @@ interface MenuItem {
   available: boolean;
 }
 
-const initialMenuItems: MenuItem[] = [
-  {
-    id: '1',
-    name: 'Fishball Noodles',
-    description: 'Delicious noodles served with handmade fishballs in a savory broth.',
-    price: 5,
-    image: fnImage,
-    available: true
-  },
-  {
-    id: '2',
-    name: 'Bak Chor Mee',
-    description: 'Minced pork noodles with black vinegar, chili, and various toppings.',
-    price: 5,
-    image: bcmImage,
-    available: true
-  },
-  {
-    id: '3',
-    name: 'Fishball Soup',
-    description: 'A light and tasty soup with handmade fishballs.',
-    price: 4,
-    image: fsImage,
-    available: true
-  },
-  {
-    id: '4',
-    name: 'Laksa',
-    description: 'Spicy noodle soup with coconut milk, prawns, and fish cake.',
-    price: 6,
-    image: laksaImage,
-    available: true
-  }
-];
-
 const MenuEditor = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [originalItem, setOriginalItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/hawker/login');
     }
   }, [authLoading, user, navigate]);
+
+  const fetchMenuItems = async () => {
+    if (!user?.stallId) return;
+    
+    try {
+      setLoading(true);
+      const response = await stallAPI.getMenuItems(user.stallId);
+      // Transform API response to match our MenuItem interface
+      const transformedItems: MenuItem[] = response.menuItems.map(item => ({
+        id: item.menuItemID,
+        name: item.menuItemName,
+        description: item.menuItemDescription || '',
+        price: item.menuItemPrice,
+        image: item.menuItemImage,
+        available: item.menuAvailability
+      }));
+      
+      setMenuItems(transformedItems);
+    } catch (error) {
+      console.error('Failed to fetch menu items:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load menu items. Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenuItems();
+  }, [user?.stallId]);
   
   const handleAddNewItem = () => {
     const newItem: MenuItem = {
@@ -98,20 +94,46 @@ const MenuEditor = () => {
     setHasChanges(false);
   };
   
-  const handleDeleteItem = (id: string) => {
-    setMenuItems(prev => prev.filter(item => item.id !== id));
-    if (editingItem?.id === id) {
-      setEditingItem(null);
-      setOriginalItem(null);
+  const handleDeleteItem = async (id: string) => {
+    if (!user?.stallId) return;
+    
+    try {
+      setIsSubmitting(true);
+      // Update local state first for better UX
+      setMenuItems(prev => prev.filter(item => item.id !== id));
+      if (editingItem?.id === id) {
+        setEditingItem(null);
+        setOriginalItem(null);
+      }
+      
+      // Call API to delete the item
+      await stallAPI.updateMenuItem(user.stallId, id, {
+        menuAvailability: false // Soft delete by marking as unavailable
+      });
+      
+      // Refresh from database
+      await fetchMenuItems();
+      
+      toast({
+        title: 'Item Deleted',
+        description: 'Menu item has been removed successfully',
+      });
+    } catch (error) {
+      console.error('Failed to delete menu item:', error);
+      // Revert local state on error
+      await fetchMenuItems();
+      toast({
+        title: 'Error',
+        description: 'Failed to delete menu item. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    toast({
-      title: 'Item Deleted',
-      description: 'Menu item has been removed successfully',
-    });
   };
   
   const handleSaveItem = async () => {
-    if (!editingItem) return;
+    if (!editingItem || !user?.stallId) return;
     
     if (!editingItem.name.trim()) {
       toast({
@@ -134,9 +156,65 @@ const MenuEditor = () => {
     try {
       setIsSubmitting(true);
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      let imageUrl = editingItem.image;
       
+      // Only upload new image if it's different from the original and is a base64 string
+      if (originalItem && editingItem.image !== originalItem.image && editingItem.image.startsWith('data:')) {
+        try {
+          // 1. Get the presigned URL from our API
+          const { uploadUrl, fileUrl } = await stallAPI.getUploadUrl({
+            filename: `${user.stallId}/${Date.now()}-${editingItem.name.replace(/\s+/g, '-')}.jpg`,
+            contentType: 'image/jpeg'
+          });
+          
+          // 2. Convert base64 to blob
+          const base64Data = editingItem.image.split(',')[1];
+          const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(res => res.blob());
+          
+          // 3. Upload to S3 using presigned URL
+          const response = await fetch(uploadUrl, {
+            method: 'PUT',
+            body: blob,
+            headers: {
+              'Content-Type': 'image/jpeg',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to upload image');
+          }
+
+          imageUrl = fileUrl;
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to upload image. Please try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+      
+      // Create or update the menu item
+      const menuItemData = {
+        menuItemName: editingItem.name,
+        menuItemDescription: editingItem.description || '',
+        menuItemPrice: editingItem.price,
+        menuItemImage: imageUrl,
+        menuAvailability: editingItem.available
+      };
+
+      if (originalItem) {
+        // Update existing item
+        await stallAPI.updateMenuItem(user.stallId, editingItem.id, menuItemData);
+      } else {
+        // Create new item
+        const response = await stallAPI.createMenuItem(user.stallId, menuItemData);
+        editingItem.id = response.menuItemID;
+      }
+      
+      // Update local state for better UX
       setMenuItems(prev => {
         const exists = prev.some(item => item.id === editingItem.id);
         if (exists) {
@@ -145,6 +223,9 @@ const MenuEditor = () => {
           return [...prev, editingItem];
         }
       });
+      
+      // Refresh from database to ensure consistency
+      await fetchMenuItems();
       
       setEditingItem(null);
       setOriginalItem(null);
@@ -155,6 +236,9 @@ const MenuEditor = () => {
         description: 'Menu item has been saved successfully',
       });
     } catch (error) {
+      console.error('Error saving menu item:', error);
+      // Revert local state on error
+      await fetchMenuItems();
       toast({
         title: 'Error',
         description: 'Failed to save menu item. Please try again.',
@@ -177,6 +261,7 @@ const MenuEditor = () => {
     if (!editingItem) return;
     
     const { name, value } = e.target;
+    console.log('Input change:', name, value);
     
     setEditingItem(prev => {
       if (!prev) return prev;
@@ -207,35 +292,63 @@ const MenuEditor = () => {
     reader.readAsDataURL(file);
   };
   
-  const handleToggleAvailable = (id: string) => {
-    setMenuItems(prev => 
-      prev.map(item => 
-        item.id === id 
-          ? { ...item, available: !item.available } 
-          : item
-      )
-    );
+  const handleToggleAvailable = async (id: string) => {
+    if (!user?.stallId) return;
     
-    if (editingItem && editingItem.id === id) {
-      setEditingItem(prev => {
-        if (!prev) return prev;
-        return { ...prev, available: !prev.available };
+    try {
+      setIsSubmitting(true);
+      const item = menuItems.find(item => item.id === id);
+      if (!item) return;
+      
+      // Update local state first for better UX
+      setMenuItems(prev => 
+        prev.map(item => 
+          item.id === id 
+            ? { ...item, available: !item.available } 
+            : item
+        )
+      );
+      
+      if (editingItem && editingItem.id === id) {
+        setEditingItem(prev => {
+          if (!prev) return prev;
+          return { ...prev, available: !prev.available };
+        });
+        setHasChanges(true);
+      }
+      
+      // Call API to update availability
+      await stallAPI.updateMenuItem(user.stallId, id, {
+        menuAvailability: !item.available
       });
-      setHasChanges(true);
+      
+      // Refresh from database
+      await fetchMenuItems();
+      
+      toast({
+        title: 'Item Updated',
+        description: 'Item availability has been toggled',
+      });
+    } catch (error) {
+      console.error('Failed to toggle availability:', error);
+      // Revert local state on error
+      await fetchMenuItems();
+      toast({
+        title: 'Error',
+        description: 'Failed to update item availability. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    toast({
-      title: 'Item Updated',
-      description: 'Item availability has been toggled',
-    });
   };
 
-  if (authLoading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-gray-200 mb-4"></div>
-          <div className="h-4 w-32 bg-gray-200 rounded"></div>
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading menu items...</p>
         </div>
       </div>
     );
@@ -366,37 +479,39 @@ const MenuEditor = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {menuItems.map(item => (
-                    <div 
-                      key={item.id}
-                      className={`p-4 border rounded-lg flex items-center cursor-pointer transition-colors
-                        ${editingItem?.id === item.id ? 'border-primary bg-primary/5' : 
-                          'hover:bg-muted/50'} 
-                        ${!item.available ? 'opacity-60' : ''}
-                      `}
-                      onClick={() => handleEditItem(item)}
-                    >
+                  {menuItems.map(item => {
+                    return (
                       <div 
-                        className="w-16 h-16 rounded-md bg-muted flex-shrink-0 overflow-hidden mr-4"
-                        style={{ backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url(${item.image})` }}
+                        key={item.id}
+                        className={`p-4 border rounded-lg flex items-center cursor-pointer transition-colors
+                          ${editingItem?.id === item.id ? 'border-primary bg-primary/5' : 
+                            'hover:bg-muted/50'} 
+                          ${!item.available ? 'opacity-60' : ''}
+                        `}
+                        onClick={() => handleEditItem(item)}
                       >
-                        {!item.image && <ImageIcon className="w-full h-full p-4 text-muted-foreground" />}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{item.name}</h3>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {item.description.substring(0, 60)}{item.description.length > 60 ? '...' : ''}
-                        </p>
-                        <div className="flex items-center mt-1">
-                          <span className="text-sm font-medium">S${item.price.toFixed(2)}</span>
-                          <span className={`ml-3 text-xs px-2 py-0.5 rounded-full ${item.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {item.available ? 'Available' : 'Currently not available'}
-                          </span>
+                        <div 
+                          className="w-16 h-16 rounded-md bg-muted flex-shrink-0 overflow-hidden mr-4"
+                          style={{ backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url(${item.image})` }}
+                        >
+                          {!item.image && <ImageIcon className="w-full h-full p-4 text-muted-foreground" />}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium truncate">{item.name}</h3>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {item.description ? item.description.substring(0, 60) + (item.description.length > 60 ? '...' : '') : ''}
+                          </p>
+                          <div className="flex items-center mt-1">
+                            <span className="text-sm font-medium">S${item.price.toFixed(2)}</span>
+                            <span className={`ml-3 text-xs px-2 py-0.5 rounded-full ${item.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {item.available ? 'Available' : 'Currently not available'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -512,18 +627,6 @@ const MenuEditor = () => {
                       >
                         Cancel
                       </Button>
-                      
-                      {originalItem && (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          onClick={() => handleDeleteItem(editingItem.id)}
-                          disabled={isSubmitting}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </Button>
-                      )}
                     </div>
                     
                     <Button

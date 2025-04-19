@@ -153,79 +153,34 @@ const CustomerMenu = () => {
           setStallDetails(mockStallDetails);
         }
 
-        // For menu items, we're still using mock data until that API is implemented
-        const mockMenuItems: MenuItem[] = [
-          {
-            id: "1",
-            name: "Chicken Rice",
-            description: "Fragrant rice with steamed chicken and special sauce",
-            price: 5,
-            image: "/placeholder.svg",
-            category: "Rice",
-            available: true,
-          },
-          {
-            id: "2",
-            name: "Wanton Noodles",
-            description: "Springy noodles with char siu and wantons",
-            price: 5.5,
-            image: "/placeholder.svg",
-            category: "Noodles",
-            available: true,
-          },
-          {
-            id: "3",
-            name: "Laksa",
-            description: "Spicy noodle soup with coconut milk",
-            price: 6,
-            image: "/placeholder.svg",
-            category: "Noodles",
-            available: true,
-          },
-          {
-            id: "4",
-            name: "Nasi Lemak",
-            description: "Coconut rice with sambal, fried chicken, and sides",
-            price: 5.5,
-            image: "/placeholder.svg",
-            category: "Rice",
-            available: true,
-          },
-          {
-            id: "5",
-            name: "Milo Dinosaur",
-            description: "Iced milo topped with milo powder",
-            price: 3,
-            image: "/placeholder.svg",
-            category: "Drinks",
-            available: true,
-          },
-          {
-            id: "6",
-            name: "Teh Tarik",
-            description: "Pulled milk tea",
-            price: 2,
-            image: "/placeholder.svg",
-            category: "Drinks",
-            available: true,
-          },
-        ];
+        // Fetch menu items from API
+        if (stallId) {
+          try {
+            const response = await stallAPI.getMenuItems(stallId);
+            const apiMenuItems = response.menuItems.map((item: any) => ({
+              id: item.menuItemID,
+              name: item.menuItemName,
+              description: item.menuItemDescription || "",
+              price: item.menuItemPrice,
+              image: item.menuItemImage || "/placeholder.svg",
+              category: item.menuItemCategory || "Uncategorized",
+              available: item.menuAvailability,
+            }));
+            setMenuItems(apiMenuItems);
+            setCategories([...new Set(apiMenuItems.map((item) => item.category))]);
+          } catch (error) {
+            console.error("Failed to fetch menu items:", error);
+            toast({
+              title: "Error",
+              description: "Failed to load menu items",
+              variant: "destructive",
+            });
+          }
+        }
 
-        setMenuItems(mockMenuItems);
-
-        const uniqueCategories = [
-          "all",
-          ...new Set(mockMenuItems.map((item) => item.category)),
-        ];
-        setCategories(uniqueCategories);
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching stall data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load menu data",
-          variant: "destructive",
-        });
-      } finally {
+        console.error("Error in fetchStallData:", error);
         setLoading(false);
       }
     };
