@@ -16,8 +16,8 @@ export const useStallProfile = (stallID?: string) => {
     stall: null,
   });
 
-  // Use the provided stallID, then user's stallId, then user's id, then default to "001"
-  const effectiveStallID = stallID || user?.stallId || user?.id || "001";
+  // Use the provided stallID, then user's stallId, then user's id
+  const effectiveStallID = stallID || user?.stallId || user?.id;
 
   useEffect(() => {
     const fetchStallProfile = async () => {

@@ -251,13 +251,13 @@ const mapOrderToApiOrder = (order: CreateOrderParams): {
   };
 };
 
-export const useOrders = (hawkerId?: string) => {
+export const useOrders = (hawkerId: string) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);  // Start as true
   const { user } = useAuth();
 
   // Use a stable stallId that doesn't change on re-renders
-  const stallId = React.useMemo(() => hawkerId || user?.id || '001', [hawkerId, user?.id]);
+  const stallId = React.useMemo(() => hawkerId || user?.id, [hawkerId, user?.id]);
 
   useEffect(() => {
     let isMounted = true;

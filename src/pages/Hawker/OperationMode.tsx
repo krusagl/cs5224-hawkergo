@@ -18,7 +18,7 @@ const OperationMode = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [staticOrders, setStaticOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
-  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders(user?.id || '001');
+  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders(user?.stallId || user?.id );
 
   // Auth state changes
   useEffect(() => {

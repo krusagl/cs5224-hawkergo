@@ -189,7 +189,7 @@ const CustomTooltip = ({
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
-  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders();
+  const { orders, loading: ordersLoading, updateOrderStatus } = useOrders(user?.stallId || user?.id );
   const {
     stall,
     loading: stallLoading,
@@ -552,7 +552,7 @@ const Dashboard = () => {
             </p>
             <div className="flex justify-center mb-4">
               <QRCodeGenerator
-                value={`${window.location.origin}/stall/${stall?.PK?.replace('STALL#', '')}`}
+                value={`${window.location.origin}/stall/${stall?.stallID}`}
                 stallName={stall?.stallName || "Your Stall"}
                 downloadFileName={`${stall?.stallName || "stall"}-qrcode`}
               />

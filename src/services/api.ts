@@ -16,8 +16,7 @@ export interface User {
 }
 
 export interface Stall {
-  PK: string;
-  SK: string;
+
   stallID: string;
   userID: string;
   stallName: string;
@@ -76,14 +75,16 @@ async function fetchAPI<T>(
   method: "GET" | "POST" | "PUT" | "DELETE",
   body?: Record<string, unknown>
 ): Promise<T> {
+  // Get the stored user from localStorage
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  
   const options: RequestInit = {
     method,
     headers: {
       "Content-Type": "application/json",
-      // Add authentication headers if needed
-      // 'Authorization': `Bearer ${getToken()}`
+      ...(user?.id && { "Authorization": `Bearer ${user.id}` }),
     },
-    // Add CORS mode
     mode: "cors",
     credentials: "omit",
   };
@@ -93,12 +94,17 @@ async function fetchAPI<T>(
   }
 
   try {
-    // const isUserEndpoint = endpoint.startsWith("/api/login") || endpoint.startsWith("/api/users");
-    // const baseUrl = isUserEndpoint? `${API_BASE_URL}/dev`: API_BASE_URL;
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // If we get a 401, clear the stored user and reload the page
+      if (response.status === 401) {
+        localStorage.removeItem('user');
+        window.location.reload();
+      }
+      
       throw new Error(
         errorData.message || `API request failed with status ${response.status}`
       );
@@ -131,7 +137,8 @@ function getMockData<T>(endpoint: string, method: string): T {
     const mockResponse: LoginResponse = {
       userID: "mock-user-123",
       userName: "Mock User",
-      message: "Login successful"
+      message: "Login successful",
+      stallID: "stall-mock-user-123"
     };
     console.log('Returning mock login response:', mockResponse);
     return mockResponse as unknown as T;
@@ -148,8 +155,6 @@ function getMockData<T>(endpoint: string, method: string): T {
     if (stallID === 'stall-mock-user-123') {
       // This is for the mock user we create during login
       mockStall = {
-        PK: "stall-mock-user-123",
-        SK: "stall-mock-user-123",
         stallID: stallID,
         userID: "mock-user-123",
         stallName: "Food Haven",
@@ -159,8 +164,6 @@ function getMockData<T>(endpoint: string, method: string): T {
       };
     } else {
       mockStall = {
-        PK: "001",
-        SK: "001",
         stallID: stallID,
         userID: "001",
         stallName: "Mock Hawker Stall",
@@ -179,24 +182,8 @@ function getMockData<T>(endpoint: string, method: string): T {
     const stallID = endpoint.split("/").pop() || "1";
 
     const mockResponse = {
-      PK: "001",
-      SK: "001",
       stallID: stallID,
       message: "Stall profile updated successfully",
-    };
-
-    return mockResponse as unknown as T;
-  }
-  
-  // For user profile update
-  if (endpoint.match(/\/api\/users\/.*/) && method === "PUT") {
-    const userID = endpoint.split("/").pop() || "mock-user-123";
-
-    const mockResponse = {
-      PK: "mock-user-123",
-      SK: "mock-user-123",
-      userID: userID,
-      message: "User profile updated successfully",
     };
 
     return mockResponse as unknown as T;
@@ -207,8 +194,6 @@ function getMockData<T>(endpoint: string, method: string): T {
     const userID = endpoint.split("/").pop() || "mock-user-123";
 
     const mockUser: User = {
-      PK: "mock-user-123",
-      SK: "mock-user-123",
       userID: userID,
       userName: "Mock User",
       email: "mock@example.com",
@@ -216,7 +201,19 @@ function getMockData<T>(endpoint: string, method: string): T {
 
     return mockUser as unknown as T;
   }
+  
+  // For user profile update
+  if (endpoint.match(/\/api\/users\/.*/) && method === "PUT") {
+    const userID = endpoint.split("/").pop() || "mock-user-123";
 
+    const mockResponse = {
+      userID: userID,
+      message: "User profile updated successfully",
+    };
+
+    return mockResponse as unknown as T;
+  }
+  
   // Add more mock data for other endpoints as needed
 
   // Default fallback
