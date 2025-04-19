@@ -69,7 +69,7 @@ const mapApiResponseToOrder = (apiOrder: any): Order => {
     items: apiOrder.orderDetails.map((item: any) => ({
       menuItemId: item.menuItemName,
       name: item.menuItemName,
-      price: apiOrder.orderTotalCost / apiOrder.orderDetails.reduce((sum: number, i: any) => sum + i.quantity, 0),
+      price: item.price,
       quantity: item.quantity
     })),
     status: apiOrder.orderStatus.toLowerCase() === 'new' ? 'new' : apiOrder.orderStatus.toLowerCase() as any,
@@ -268,7 +268,8 @@ export const useOrders = (hawkerId: string = '001') => {
           customerContact: orderData.customerId,
           orderDetails: orderData.items.map(item => ({
             menuItemName: item.name,
-            quantity: item.quantity
+            quantity: item.quantity,
+            price: item.price
           })),
           orderTotalCost: orderData.totalAmount
         };

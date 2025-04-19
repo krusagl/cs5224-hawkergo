@@ -194,7 +194,7 @@ const Dashboard = () => {
     stall,
     loading: stallLoading,
     updateStallProfile,
-  } = useStallProfile();
+  } = useStallProfile(user?.stallId);
   const billingInfo = useBillingInfo(orders);
   const navigate = useNavigate();
 
@@ -241,6 +241,17 @@ const Dashboard = () => {
       navigate("/hawker/login");
     }
   }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (showQRCode) {
+      console.log('QR Code Debug:', {
+        stall,
+        stallID: stall?.stallID,
+        stallName: stall?.stallName,
+        url: `${window.location.origin}/stall/${stall.stallID}`
+      });
+    }
+  }, [showQRCode, stall]);
 
   const totalRevenueToday = billingInfo.todayRevenue;
 
@@ -318,7 +329,6 @@ const Dashboard = () => {
       orders.flatMap((order) => order.items.map((item) => item.menuItemId))
     ),
   ];
-  const stallUrl = `${window.location.origin}/stall/${user?.id}`;
 
   const handleOpenPremiumDialog = () => {
     setPremiumDialogOpen(true);
@@ -452,7 +462,7 @@ const Dashboard = () => {
             ) : (
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold tracking-tight">
-                  {user?.stallName || "Your Stall"}
+                  {stall?.stallName || "Your Stall"}
                 </h1>
                 <Button
                   size="icon"
@@ -492,7 +502,7 @@ const Dashboard = () => {
             ) : (
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-muted-foreground">
-                  {user?.stallAddress || "Manage your stall operations"}
+                  {stall?.stallDescription || "Manage your stall operations"}
                 </p>
                 <Button
                   size="icon"
@@ -542,9 +552,9 @@ const Dashboard = () => {
             </p>
             <div className="flex justify-center mb-4">
               <QRCodeGenerator
-                value={`${window.location.origin}/stall/${user?.id}`}
-                stallName={user?.stallName || "Your Stall"}
-                downloadFileName={`${user?.stallName || "stall"}-qrcode`}
+                value={`${window.location.origin}/stall/${stall?.PK?.replace('STALL#', '')}`}
+                stallName={stall?.stallName || "Your Stall"}
+                downloadFileName={`${stall?.stallName || "stall"}-qrcode`}
               />
             </div>
             <Button
