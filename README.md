@@ -48,17 +48,31 @@ hawker-go/
 
 ## Demonstration Guidance
 
-### Customer Function
+### Complete Workflow
+
+1. Navigate to https://preview--cs5224-hawkergo.lovable.app/hawker/login
+2. Click "get started" to navigate to login page
+3. Click "Register now" to sign up
+4. Back to login page, use your account to sign in
+5. Click "Manage menu" to add dishes
+6. Click Display QR Code and scan. This will lead you to customer's order page
+7. Create your order, and watch over the order status in stall dashboard.
+8. Switch to Operation Mode for order history.
+
+### Demo Account
+
+#### Ordering at Demo Stall
 
  ![Stall QR Code](https://github.com/krusagl/cs5224-hawkergo/blob/main/public/stallQR.jpeg)
- 
+
 1. Scan the QR code or via [Demo Order](https://id-preview--d078097a-ab13-4032-9dd7-231189aaa372.lovable.app/stall/1) to access the demo stall's menu:
 2. Browse the menu and add items to cart
 3. Proceed to checkout
 4. Enter customer details and payment information
 5. Receive order confirmation
 
-### Stall Function
+#### Order Management at Demo Stall
+
 After you scan the stall QR code and order your dishes, you may check its status on our demo stall account
 1. Navigate to <https://preview--cs5224-hawkergo.lovable.app/>
 2. Click "get started" to navigate to login page
