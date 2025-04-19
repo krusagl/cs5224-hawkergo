@@ -339,7 +339,8 @@ const CustomerMenu = () => {
         customerContact: contactNumber,
         orderDetails: cart.map(item => ({
           menuItemName: item.name,
-          quantity: item.quantity
+          quantity: item.quantity,
+          price: item.price
         })),
         orderTotalCost: cartTotal
       };

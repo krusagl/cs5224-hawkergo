@@ -142,7 +142,10 @@ const OrderCard: React.FC<OrderCardProps> = ({
                   <span className="text-sm font-medium">{item.quantity}x</span>
                   <span className="text-sm ml-2">{item.name}</span>
                 </div>
-                <span className="text-sm">S${(item.price * item.quantity).toFixed(2)}</span>
+                <div className="text-sm text-right">
+                  <div>S${item.price.toFixed(2)} × {item.quantity}</div>
+                  <div className="text-muted-foreground">S${(item.price * item.quantity).toFixed(2)}</div>
+                </div>
               </div>
             ))}
           </div>

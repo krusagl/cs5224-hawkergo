@@ -72,7 +72,7 @@ const generateMockOrders = (hawkerId: string, isDemo: boolean = true): Order[] =
   const now = new Date();
   const today = startOfDay(now);
   
-  // Fixed menu items
+  // Fixed menu items with their actual prices
   const menuItems = [
     { menuItemId: '1', name: 'Fishball Noodles', price: 5 },
     { menuItemId: '2', name: 'Bak Chor Mee', price: 5 },
@@ -209,17 +209,19 @@ const generateMockOrders = (hawkerId: string, isDemo: boolean = true): Order[] =
 
 // Map API order to our internal Order type
 const mapApiOrderToOrder = (apiOrder: ApiOrder): Order => {
+  const items = apiOrder.orderDetails.map(item => ({
+    menuItemId: item.menuItemName, // Using name as ID for now
+    name: item.menuItemName,
+    price: item.price, // Use the actual price from the API
+    quantity: item.quantity
+  }));
+
   return {
     id: apiOrder.orderID,
     customerId: apiOrder.customerContact, // Using contact as ID for now
     customerName: apiOrder.customerName,
     hawkerId: apiOrder.stallID,
-    items: apiOrder.orderDetails.map(item => ({
-      menuItemId: item.menuItemName, // Using name as ID for now
-      name: item.menuItemName,
-      price: apiOrder.orderTotalCost / apiOrder.orderDetails.reduce((sum, i) => sum + i.quantity, 0), // Estimate price
-      quantity: item.quantity
-    })),
+    items,
     status: apiOrder.orderStatus === 'new' ? 'new' : apiOrder.orderStatus as any,
     createdAt: apiOrder.orderDateTime,
     updatedAt: apiOrder.orderDateTime,
@@ -242,7 +244,8 @@ const mapOrderToApiOrder = (order: CreateOrderParams): {
     customerContact: order.customerId,
     orderDetails: order.items.map(item => ({
       menuItemName: item.name,
-      quantity: item.quantity
+      quantity: item.quantity,
+      price: item.price
     })),
     orderTotalCost: order.totalAmount
   };

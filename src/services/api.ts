@@ -37,6 +37,7 @@ export interface MenuItem {
 export interface OrderItem {
   menuItemName: string;
   quantity: number;
+  price: number;
 }
 
 export interface Order {
