@@ -57,13 +57,13 @@ hawker-go/
 7. Create your order, and watch over the order status in stall dashboard.
 8. Switch to Operation Mode for order history.
 
-### Demo Account
+### Prepared Demo Account
 
 #### Ordering at Demo Stall
 
- ![Stall QR Code](https://github.com/krusagl/cs5224-hawkergo/blob/main/public/stallQR.jpeg)
+ ![Stall QR Code](https://github.com/krusagl/cs5224-hawkergo/blob/main/public/stallQR.png)
 
-1. Scan the QR code or via [Demo Order](https://id-preview--d078097a-ab13-4032-9dd7-231189aaa372.lovable.app/stall/1) to access the demo stall's menu:
+1. Scan the QR code or via [Demo Order](https://preview--cs5224-hawkergo.lovable.app/stall/3e63c3f8-c9ab-4003-955a-25cebf98b94f) to access the demo stall's menu:
 2. Browse the menu and add items to cart
 3. Proceed to checkout
 4. Enter customer details and payment information
@@ -74,6 +74,7 @@ hawker-go/
 After you scan the stall QR code and order your dishes, you may check its status on our demo stall account
 1. Navigate to <https://preview--cs5224-hawkergo.lovable.app/>
 2. Click "get started" to navigate to login page
-3. Click the button for "demo account" to navigate to the demo stall page
+3. The demo account's email is demo@hawkergo.com
+4. The demo accounts' password is 123456
 4. Check new order status under recent transactions, or switch to operation mode for more order history.
 
