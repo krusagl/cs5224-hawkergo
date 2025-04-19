@@ -1,9 +1,9 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { authAPI, userAPI, stallAPI } from '@/services/api';
 
+const API_BASE_URL = "https://xatcwdmrsg.execute-api.ap-southeast-1.amazonaws.com";
+
 export interface User {
-  PK: string;
-  SK: string;
   id: string;
   email: string;
   name: string;
@@ -53,12 +53,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored session
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const checkAuth = async () => {
+      try {
+        const storedStallId = localStorage.getItem('stallID');
+        
+        if (storedStallId) {
+          const parsedStallId = JSON.parse(storedStallId);
+          
+          if (parsedStallId?.stallId) {
+            try {
+              const stallData = await stallAPI.getStallProfile(parsedStallId.stallId);
+              const userData = await userAPI.getUserProfile(stallData.userID);
+              
+              const completeUserData: User = {
+                id: userData.userID,
+                email: userData.email,
+                name: userData.userName,
+                role: 'hawker' as const,
+                stallId: parsedStallId.stallId,
+                stallName: stallData.stallName,
+                stallAddress: stallData.stallAddress,
+                stallDescription: stallData.stallDescription,
+                accountType: 'regular',
+                subscriptionStatus: 'inactive',
+              };
+              
+              setUser(completeUserData);
+            } catch (error) {
+              localStorage.removeItem('stallID');
+              setUser(null);
+            }
+          } else {
+            localStorage.removeItem('stallID');
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        localStorage.removeItem('stallID');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const hasActiveSubscription = () => {
@@ -79,92 +117,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
-  const login = async (email: string, password: string, accountType?: 'demo' | 'regular' | 'premium' | 'admin') => {
+  const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      // In a real app, this would be a fetch call to your authentication API
-      // const response = await fetch(API_ENDPOINTS.LOGIN, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password })
-      // });
-      // const data = await response.json();
+      const response = await authAPI.login(email, password);
       
-      // Handle demo account with mock data
-      if (accountType === 'demo') {
-        const mockUser: User = {
-          PK: 'demo',
-          SK: 'demo',
-          id: '1',
-          email,
-          name: 'Demo User',
-          role: 'hawker',
-          stallName: 'Ah Ming Noodles',
-          stallAddress: 'Maxwell Food Centre, #01-23',
-          stallDescription: 'Traditional Chinese noodles with the best ingredients since 1980',
-          accountType: 'demo',
-          subscriptionStatus: 'inactive',
-          isFirstLogin: false,
-          stallId: 'demo-stall-1'
+      if (response.userID) {
+        const essentialUserData = {
+          stallId: response.stallID
         };
         
-        setUser(mockUser);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        return mockUser;
-      }
-      
-      // Handle real authentication for all other accounts
-      console.log('Calling login API with:', email, password);
-      const loginResponse = await authAPI.login(email, password);
-      console.log('Login API response:', loginResponse);
-      
-      // Create user object from login response
-      const user: User = {
-        PK: 'user',
-        SK: loginResponse.userID,
-        id: loginResponse.userID,
-        email,
-        name: loginResponse.userName,
-        role: accountType === 'admin' ? 'admin' : 'hawker',
-        accountType: accountType || 'regular',
-        subscriptionStatus: accountType === 'premium' ? 'active' : 'inactive',
-        isFirstLogin: true,
-      };
-      
-      // Try to get user's stall information
-      // ✅ If stallID is returned, fetch stall details
-      if (loginResponse.stallID) {
-        user.stallId = loginResponse.stallID;
-        try {
-          const stall = await stallAPI.getStallProfile(loginResponse.stallID);
-          user.stallName = stall.stallName;
-          user.stallAddress = stall.stallAddress;
-          user.stallDescription = stall.stallDescription;
-          // user.stallLogo = stall.stallLogo;
-        } catch (err) {
-          console.warn('Failed to load stall info:', err);
+        localStorage.setItem('stallID', JSON.stringify(essentialUserData));
+        
+        const userProfile = await userAPI.getUserProfile(response.userID);
+        let stallData = null;
+        if (response.stallID) {
+          try {
+            stallData = await stallAPI.getStallProfile(response.stallID);
+          } catch (error) {
+            // Silently handle stall data fetch error
+          }
         }
+        
+        const completeUserData: User = {
+          id: response.userID,
+          email: email,
+          role: 'hawker' as const,
+          name: userProfile.userName,
+          stallId: response.stallID,
+          stallName: stallData?.stallName,
+          stallAddress: stallData?.stallAddress,
+          stallDescription: stallData?.stallDescription,
+          accountType: 'regular',
+          subscriptionStatus: 'inactive',
+        };
+        
+        setUser(completeUserData);
+        return completeUserData;
       }
       
-      // Set subscription expiry for premium accounts
-      if (accountType === 'premium') {
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + 30);
-        user.subscriptionExpiry = expiryDate.toISOString();
-      }
-      
-      // Set permanent active status for admin accounts
-      if (accountType === 'admin') {
-        user.subscriptionStatus = 'active';
-      }
-      
-      console.log('Final user object after login:', user);
-      setUser(user);
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
+      throw new Error('Login failed');
     } catch (error) {
-      console.error('Login failed:', error);
-      // Throw error to be handled by the login component
       throw error;
     } finally {
       setLoading(false);
@@ -198,8 +191,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // 3. Create user object with all the data
       const newUser: User = {
-        PK: 'user',
-        SK: userResponse.userID,
         id: userResponse.userID,
         email: userData.email || '',
         name: userData.name || '',
@@ -216,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // 4. Update state and storage
       setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
+      //localStorage.setItem('user', JSON.stringify(newUser));
       
       return newUser;
     } catch (error) {
@@ -229,15 +220,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      // In a real app, this would be a fetch call to your logout API
-      // await fetch(API_ENDPOINTS.LOGOUT, { method: 'POST' });
-      
-      // Clear user data and storage
+      setLoading(true);
+      localStorage.removeItem('stallID');
       setUser(null);
-      localStorage.removeItem('user');
     } catch (error) {
-      console.error('Logout failed:', error);
-      throw error;
+      console.error('Logout error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -246,16 +235,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       if (!user) throw new Error('Not authenticated');
       
-      // Create a copy of the user data that we'll update
       const updatedUser = { ...user, ...data };
-      console.log('Updating user profile with:', data);
       
-      // Track if we've made any successful API calls
       let apiUpdateSuccessful = false;
       
-      // Update user profile in the database if name or email changed
       if (data.name || data.email) {
-        console.log('⏫ Sending user profile update:', data);
         await userAPI.updateUserProfile(user.id, {
           userName: data.name || user.name,
           email: data.email || user.email
@@ -263,7 +247,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         apiUpdateSuccessful = true;
       }
       
-      // Update stall information in the database if any stall data changed
       if (user.stallId && (data.stallName || data.stallAddress || data.stallDescription)) {
         try {
           await stallAPI.updateStallProfile(user.stallId, {
@@ -272,26 +255,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             stallDescription: data.stallDescription || user.stallDescription
           });
           apiUpdateSuccessful = true;
-          console.log('Stall profile updated successfully');
         } catch (error) {
-          console.error('Failed to update stall profile:', error);
           throw new Error('Failed to update stall profile');
         }
       }
       
-      // If this was the first login, and the user is updating their profile, 
-      // set isFirstLogin to false
       if (user.isFirstLogin && (data.stallName || data.stallAddress)) {
         updatedUser.isFirstLogin = false;
       }
       
-      // Always update local state so the UI shows the changes
-      // This ensures a better user experience even if the API call fails
       setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      console.log('User data updated locally:', updatedUser);
+      
+      const essentialData = {
+        stallId: updatedUser.stallId
+      };
+      localStorage.setItem('stallID', JSON.stringify(essentialData));
     } catch (error) {
-      console.error('Profile update failed:', error);
       throw error;
     } finally {
       setLoading(false);
