@@ -57,38 +57,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const storedStallId = localStorage.getItem('stallID');
         
-        if (storedStallId) {
-          const parsedStallId = JSON.parse(storedStallId);
-          
-          if (parsedStallId?.stallId) {
-            try {
-              const stallData = await stallAPI.getStallProfile(parsedStallId.stallId);
-              const userData = await userAPI.getUserProfile(stallData.userID);
-              
-              const completeUserData: User = {
-                id: userData.userID,
-                email: userData.email,
-                name: userData.userName,
-                role: 'hawker' as const,
-                stallId: parsedStallId.stallId,
-                stallName: stallData.stallName,
-                stallAddress: stallData.stallAddress,
-                stallDescription: stallData.stallDescription,
-                accountType: 'regular',
-                subscriptionStatus: 'inactive',
-              };
-              
-              setUser(completeUserData);
-            } catch (error) {
-              localStorage.removeItem('stallID');
-              setUser(null);
-            }
-          } else {
-            localStorage.removeItem('stallID');
-            setUser(null);
+        if (!storedStallId) {
+          setLoading(false);
+          return;
+        }
+
+        const parsedStallId = JSON.parse(storedStallId);
+        
+        if (!parsedStallId?.stallId) {
+          localStorage.removeItem('stallID');
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const stallData = await stallAPI.getStallProfile(parsedStallId.stallId);
+          if (!stallData?.userID) {
+            throw new Error('Invalid stall data');
           }
+          
+          const userData = await userAPI.getUserProfile(stallData.userID);
+          
+          const completeUserData: User = {
+            id: userData.userID,
+            email: userData.email,
+            name: userData.userName,
+            role: 'hawker' as const,
+            stallId: parsedStallId.stallId,
+            stallName: stallData.stallName,
+            stallAddress: stallData.stallAddress,
+            stallDescription: stallData.stallDescription,
+            accountType: 'regular',
+            subscriptionStatus: 'inactive',
+          };
+          
+          setUser(completeUserData);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          localStorage.removeItem('stallID');
+          setUser(null);
         }
       } catch (error) {
+        console.error('Error checking auth:', error);
         localStorage.removeItem('stallID');
         setUser(null);
       } finally {
