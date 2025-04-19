@@ -27,65 +27,6 @@ const Login = () => {
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  const handleLoginWithPreset = async (preset: 'demo' | 'admin') => {
-    try {
-      setLoading(true);
-      
-      // Use preset credentials
-      const presetEmail =  'demo@hawkergo.com';
-      const presetPassword = '123456'; // This should match the mock password in the API
-      
-      console.log('Starting login process with preset account...');
-      
-      const response = (await login(presetEmail, presetPassword) as unknown) as LoginResponse;
-      console.log('Login successful, response:', response);
-      
-      if (!response || !response.name) {
-        throw new Error('Invalid response from server');
-      }
-      
-      // Store user data in localStorage
-      const user = {
-        id: response.userID,
-        email: presetEmail,
-        name: response.userName,
-        role: preset === 'admin' ? 'admin' : 'hawker',
-      };
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      toast({
-        title: 'Success',
-        description: `Welcome back! Redirecting to dashboard...`,
-      });
-      
-      // Navigate based on the role from the API response
-      const dashboardPath = user.role === 'admin' ? '/admin/dashboard' : '/hawker/dashboard';
-      console.log('Redirecting to:', dashboardPath);
-      navigate(dashboardPath);
-    } catch (error) {
-      console.error('Login error details:', error);
-      let errorMessage = 'Invalid email or password. Please try again.';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch') || error.message.includes('Unable to connect')) {
-          errorMessage = 'Unable to connect to the server. Please check your internet connection.';
-        } else if (error.message.includes('Internal server error')) {
-          errorMessage = 'Server error. Please try again later.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -330,15 +271,6 @@ const Login = () => {
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign In
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  disabled={loading}
-                  onClick={() => handleLoginWithPreset('demo')}
-                >
-                  Demo Account
                 </Button>
                 <div className="text-center w-full">
                   <span className="text-sm text-muted-foreground">Don't have an account? </span>
