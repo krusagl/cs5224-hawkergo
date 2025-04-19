@@ -716,10 +716,6 @@ const Dashboard = () => {
                   <span className="text-2xl font-bold">
                     S${totalRevenueToday.toFixed(2)}
                   </span>
-                  <div className="text-xs text-green-500 font-medium flex items-center">
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    Today's completed orders: {completedOrders.length}
-                  </div>
                 </div>
               </CardContent>
             </Card>
