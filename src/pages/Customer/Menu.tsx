@@ -22,7 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
-import { stallAPI } from "@/services/api";
+import { stallAPI, orderAPI } from "@/services/api";
 import {
   ShoppingCart,
   Plus,
@@ -87,9 +87,20 @@ const CustomerMenu = () => {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [orderStatus, setOrderStatus] = useState<
-    "pending" | "preparing" | "ready" | "completed"
-  >("pending");
+  const [searchOrderId, setSearchOrderId] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  // Add new state for polling
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
+  // Add new state for order details
+  const [orderDetails, setOrderDetails] = useState<{
+    orderId: string;
+    customerName: string;
+    amount: number;
+    paymentMethod: string;
+    status: string;
+  } | null>(null);
 
   const cartTotal = React.useMemo(() => {
     return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -298,6 +309,10 @@ const CustomerMenu = () => {
       return;
     }
 
+    // Reset order states when starting a new order
+    setOrderPlaced(false);
+    setOrderId(null);
+    setOrderDetails(null);
     setCheckoutOpen(true);
   };
 
@@ -306,34 +321,95 @@ const CustomerMenu = () => {
       ? menuItems
       : menuItems.filter((item) => item.category === activeCategory);
 
+  // Modify the fetchOrderStatus function to use orderAPI.getOrderDetail
+  const fetchOrderStatus = async (orderId: string) => {
+    try {
+      const orderData = await orderAPI.getOrderDetail(orderId);
+      setOrderDetails({
+        orderId: orderData.orderID,
+        customerName: orderData.customerName,
+        amount: orderData.orderTotalCost,
+        paymentMethod: orderData.paymentMethod,
+        status: orderData.orderStatus
+      });
+      
+      // If order is completed or cancelled, stop polling
+      if (orderData.orderStatus === 'completed' || orderData.orderStatus === 'cancelled') {
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          setPollingInterval(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching order status:', error);
+    }
+  };
+
+  // Modify useEffect to use polling
   useEffect(() => {
     if (!orderId) return;
 
-    const updateStatusTimer = setTimeout(() => {
-      if (orderStatus === "pending") {
-        setOrderStatus("preparing");
-        toast({
-          title: "Order Update",
-          description: "Your order is now being prepared",
-        });
-      } else if (orderStatus === "preparing") {
-        setOrderStatus("ready");
-        toast({
-          title: "Order Ready!",
-          description: "Your order is ready for collection",
-        });
+    // Start polling when order is placed
+    const interval = setInterval(() => {
+      fetchOrderStatus(orderId);
+    }, 5000); // Poll every 5 seconds
+
+    setPollingInterval(interval);
+
+    // Cleanup interval on component unmount or when order is completed
+    return () => {
+      if (interval) {
+        clearInterval(interval);
       }
-    }, 10000);
+    };
+  }, [orderId]);
 
-    return () => clearTimeout(updateStatusTimer);
-  }, [orderId, orderStatus]);
+  // Modify the searchOrderStatus function
+  const searchOrderStatus = async () => {
+    if (!searchOrderId.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter an order ID",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    setSearchLoading(true);
+    try {
+      const orderData = await orderAPI.getOrderDetail(searchOrderId);
+      setOrderDetails({
+        orderId: orderData.orderID,
+        customerName: orderData.customerName,
+        amount: orderData.orderTotalCost,
+        paymentMethod: orderData.paymentMethod,
+        status: orderData.orderStatus
+      });
+      setOrderPlaced(true);
+      setCheckoutOpen(true);
+      
+      toast({
+        title: "Order Found",
+        description: `Order status: ${orderData.orderStatus}`,
+      });
+    } catch (error) {
+      console.error('Error searching order:', error);
+      toast({
+        title: "Error",
+        description: "Order not found. Please check the order ID.",
+        variant: "destructive",
+      });
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Update the handleCheckout function
   const handleCheckout = async () => {
     if (!stallId) return;
 
     setCheckoutLoading(true);
     try {
-      // Create order data
       const orderData = {
         customerName,
         customerContact: contactNumber,
@@ -342,10 +418,11 @@ const CustomerMenu = () => {
           quantity: item.quantity,
           price: item.price
         })),
-        orderTotalCost: cartTotal
+        orderTotalCost: cartTotal,
+        paymentMethod: selectedPaymentMethod,
+        paymentStatus: "paid"
       };
 
-      // Call AWS API Gateway
       const response = await fetch(`https://xatcwdmrsg.execute-api.ap-southeast-1.amazonaws.com/api/stalls/${stallId}/orders`, {
         method: 'POST',
         headers: {
@@ -359,12 +436,19 @@ const CustomerMenu = () => {
       }
 
       const result = await response.json();
-      
       setOrderId(result.orderID);
-      setOrderStatus('pending');
       setOrderPlaced(true);
       setCart([]);
-      setCheckoutOpen(false);
+      
+      // Fetch the initial order details
+      const orderDetails = await orderAPI.getOrderDetail(result.orderID);
+      setOrderDetails({
+        orderId: orderDetails.orderID,
+        customerName: orderDetails.customerName,
+        amount: orderDetails.orderTotalCost,
+        paymentMethod: orderDetails.paymentMethod,
+        status: orderDetails.orderStatus
+      });
       
       toast({
         title: "Order Placed!",
@@ -382,17 +466,38 @@ const CustomerMenu = () => {
     }
   };
 
-  const completeOrder = () => {
-    setOrderStatus("completed");
+  const completeOrder = async () => {
+    if (!orderId) return;
 
-    toast({
-      title: "Order Completed",
-      description: "Thank you for your order!",
-    });
+    try {
+      // Update the order status to completed via API
+      await orderAPI.updateOrderStatus(orderId, 'completed');
 
-    setCheckoutOpen(false);
-    setOrderPlaced(false);
-    setCart([]);
+      // Update local state
+      setOrderDetails(prev => prev ? {
+        ...prev,
+        status: 'completed'
+      } : null);
+
+      toast({
+        title: "Order Completed",
+        description: "Thank you for your order!",
+      });
+
+      // Close the dialog and reset states
+      setCheckoutOpen(false);
+      setOrderPlaced(false);
+      setOrderId(null);
+      setOrderDetails(null);
+      setCart([]);
+    } catch (error) {
+      console.error('Error completing order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete order. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -483,6 +588,38 @@ const CustomerMenu = () => {
 
           <div className="lg:col-span-1">
             <AnimatedTransition delay={0.3}>
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2" />
+                    Check Order Status
+                  </CardTitle>
+                  <CardDescription>
+                    Enter your order ID to check the status
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter order ID"
+                      value={searchOrderId}
+                      onChange={(e) => setSearchOrderId(e.target.value)}
+                      disabled={searchLoading}
+                    />
+                    <Button
+                      onClick={searchOrderStatus}
+                      disabled={searchLoading}
+                    >
+                      {searchLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Search"
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="sticky top-36 lg:top-28">
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -742,7 +879,7 @@ const CustomerMenu = () => {
           ) : (
             <div className="p-2">
               <div className="flex flex-col items-center text-center">
-                {orderStatus === "ready" ? (
+                {orderDetails?.status === "ready" ? (
                   <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
                     <CheckCircle className="h-8 w-8 text-green-600" />
                   </div>
@@ -753,109 +890,35 @@ const CustomerMenu = () => {
                 )}
 
                 <h2 className="text-2xl font-bold mb-2">
-                  {orderStatus === "pending" && "Order Received"}
-                  {orderStatus === "preparing" && "Order Being Prepared"}
-                  {orderStatus === "ready" && "Order Ready for Collection!"}
+                  {orderDetails?.status === "pending" && "Order Received"}
+                  {orderDetails?.status === "preparing" && "Order Being Prepared"}
+                  {orderDetails?.status === "ready" && "Order Ready for Collection!"}
+                  {orderDetails?.status === "completed" && "Order Completed"}
                 </h2>
 
                 <p className="text-muted-foreground mb-6">
-                  {orderStatus === "ready"
+                  {orderDetails?.status === "ready"
                     ? "Your order is ready. Please proceed to the stall for collection."
+                    : orderDetails?.status === "completed"
+                    ? "Thank you for your order!"
                     : `Your order is being prepared by ${stallDetails?.name}. We'll notify you when it's ready.`}
                 </p>
-
-                <div className="w-full bg-muted rounded-full h-2 mb-6">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all duration-500"
-                    style={{
-                      width:
-                        orderStatus === "pending"
-                          ? "33%"
-                          : orderStatus === "preparing"
-                          ? "66%"
-                          : "100%",
-                    }}
-                  ></div>
-                </div>
-
-                <div className="grid grid-cols-3 w-full gap-2 mb-6 text-sm">
-                  <div className="text-center">
-                    <div
-                      className={`h-8 w-8 rounded-full mx-auto mb-1 flex items-center justify-center ${
-                        orderStatus !== "pending"
-                          ? "bg-primary text-white"
-                          : "bg-muted"
-                      }`}
-                    >
-                      1
-                    </div>
-                    <span
-                      className={
-                        orderStatus !== "pending"
-                          ? "text-primary font-medium"
-                          : ""
-                      }
-                    >
-                      Received
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <div
-                      className={`h-8 w-8 rounded-full mx-auto mb-1 flex items-center justify-center ${
-                        orderStatus === "preparing" || orderStatus === "ready"
-                          ? "bg-primary text-white"
-                          : "bg-muted"
-                      }`}
-                    >
-                      2
-                    </div>
-                    <span
-                      className={
-                        orderStatus === "preparing" || orderStatus === "ready"
-                          ? "text-primary font-medium"
-                          : ""
-                      }
-                    >
-                      Preparing
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <div
-                      className={`h-8 w-8 rounded-full mx-auto mb-1 flex items-center justify-center ${
-                        orderStatus === "ready"
-                          ? "bg-primary text-white"
-                          : "bg-muted"
-                      }`}
-                    >
-                      3
-                    </div>
-                    <span
-                      className={
-                        orderStatus === "ready"
-                          ? "text-primary font-medium"
-                          : ""
-                      }
-                    >
-                      Ready
-                    </span>
-                  </div>
-                </div>
 
                 <div className="space-y-4 w-full">
                   <div className="text-sm bg-muted/50 p-4 rounded-lg">
                     <div className="font-medium mb-2">Order Details</div>
-                    <p>Order #: {orderId}</p>
-                    <p>Customer: {customerName}</p>
-                    <p>Amount: S${cartTotal.toFixed(2)}</p>
+                    <p>Order #: {orderDetails?.orderId}</p>
+                    <p>Customer: {orderDetails?.customerName}</p>
+                    <p>Amount: S${orderDetails?.amount.toFixed(2)}</p>
                     <p>
                       Payment:{" "}
-                      {selectedPaymentMethod === "card"
+                      {orderDetails?.paymentMethod === "card"
                         ? "Credit Card"
                         : "QR Payment"}
                     </p>
                   </div>
 
-                  {orderStatus === "ready" ? (
+                  {orderDetails?.status === "ready" ? (
                     <Button className="w-full" onClick={completeOrder}>
                       <CheckCircle className="mr-2 h-4 w-4" />
                       Confirm Received
