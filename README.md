@@ -27,9 +27,7 @@ hawker-go/
 │   │   └── Hawker/        # Hawker-facing pages
 │   ├── services/          # API services and external integrations
 │   └── utils/             # Helper functions and utilities
-├── .gitignore             # Git ignore rules
 ├── components.json        # UI components configuration
-├── index.html             # Entry HTML file
 ├── package.json           # Project dependencies and scripts
 ├── postcss.config.js      # PostCSS configuration
 ├── tailwind.config.ts     # Tailwind CSS configuration
