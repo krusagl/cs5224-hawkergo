@@ -2,6 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { authAPI, userAPI, stallAPI } from '@/services/api';
 
 export interface User {
+  PK: string;
+  SK: string;
   id: string;
   email: string;
   name: string;
@@ -91,6 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Handle demo account with mock data
       if (accountType === 'demo') {
         const mockUser: User = {
+          PK: 'demo',
+          SK: 'demo',
           id: '1',
           email,
           name: 'Demo User',
@@ -116,6 +120,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Create user object from login response
       const user: User = {
+        PK: 'user',
+        SK: loginResponse.userID,
         id: loginResponse.userID,
         email,
         name: loginResponse.userName,
@@ -192,6 +198,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // 3. Create user object with all the data
       const newUser: User = {
+        PK: 'user',
+        SK: userResponse.userID,
         id: userResponse.userID,
         email: userData.email || '',
         name: userData.name || '',

@@ -8,7 +8,7 @@ interface StallProfileState {
   stall: Stall | null;
 }
 
-export const useStallProfile = (stallID: string="001") => {
+export const useStallProfile = (stallID?: string) => {
   const { user } = useAuth();
   const [state, setState] = useState<StallProfileState>({
     loading: true,
@@ -16,8 +16,8 @@ export const useStallProfile = (stallID: string="001") => {
     stall: null,
   });
 
-  // Use the user's ID as stallID if not provided
-  const effectiveStallID = stallID || user?.id;
+  // Use the provided stallID, then user's stallId, then user's id, then default to "001"
+  const effectiveStallID = stallID || user?.stallId || user?.id || "001";
 
   useEffect(() => {
     const fetchStallProfile = async () => {
@@ -26,7 +26,9 @@ export const useStallProfile = (stallID: string="001") => {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
       try {
+       
         const stallData = await stallAPI.getStallProfile(effectiveStallID);
+  
         setState({
           loading: false,
           error: null,

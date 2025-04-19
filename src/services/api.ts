@@ -16,6 +16,8 @@ export interface User {
 }
 
 export interface Stall {
+  PK: string;
+  SK: string;
   stallID: string;
   userID: string;
   stallName: string;
@@ -65,6 +67,7 @@ export interface LoginResponse {
   userID: string;
   userName: string;
   message: string;
+  stallID?: string;
 }
 
 // Helper function for making API requests
@@ -145,6 +148,8 @@ function getMockData<T>(endpoint: string, method: string): T {
     if (stallID === 'stall-mock-user-123') {
       // This is for the mock user we create during login
       mockStall = {
+        PK: "stall-mock-user-123",
+        SK: "stall-mock-user-123",
         stallID: stallID,
         userID: "mock-user-123",
         stallName: "Food Haven",
@@ -154,6 +159,8 @@ function getMockData<T>(endpoint: string, method: string): T {
       };
     } else {
       mockStall = {
+        PK: "001",
+        SK: "001",
         stallID: stallID,
         userID: "001",
         stallName: "Mock Hawker Stall",
@@ -172,6 +179,8 @@ function getMockData<T>(endpoint: string, method: string): T {
     const stallID = endpoint.split("/").pop() || "1";
 
     const mockResponse = {
+      PK: "001",
+      SK: "001",
       stallID: stallID,
       message: "Stall profile updated successfully",
     };
@@ -184,6 +193,8 @@ function getMockData<T>(endpoint: string, method: string): T {
     const userID = endpoint.split("/").pop() || "mock-user-123";
 
     const mockResponse = {
+      PK: "mock-user-123",
+      SK: "mock-user-123",
       userID: userID,
       message: "User profile updated successfully",
     };
@@ -196,6 +207,8 @@ function getMockData<T>(endpoint: string, method: string): T {
     const userID = endpoint.split("/").pop() || "mock-user-123";
 
     const mockUser: User = {
+      PK: "mock-user-123",
+      SK: "mock-user-123",
       userID: userID,
       userName: "Mock User",
       email: "mock@example.com",
