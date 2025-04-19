@@ -270,13 +270,6 @@ export const useOrders = (hawkerId: string) => {
         const user = storedUser ? JSON.parse(storedUser) : null;
         const isDemo = user?.accountType === 'demo';
         
-        if (isDemo) {
-          const mockOrders = generateMockOrders(stallId, isDemo);
-          if (isMounted) {
-            setOrders(mockOrders);
-            setLoading(false);
-          }
-        } else {
           try {
             const response = await stallAPI.getOrders(stallId);
             const apiOrders = response.orders;
@@ -290,7 +283,7 @@ export const useOrders = (hawkerId: string) => {
               setLoading(false);
             }
           }
-        }
+        
       } catch (error) {
         if (isMounted) {
           setLoading(false);
