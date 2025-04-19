@@ -55,7 +55,7 @@ const Login = () => {
       
       toast({
         title: 'Success',
-        description: `Welcome back, ${user.name}! Redirecting to dashboard...`,
+        description: `Welcome back! Redirecting to dashboard...`,
       });
       
       // Navigate based on the role from the API response
@@ -133,7 +133,7 @@ const Login = () => {
       
       toast({
         title: 'Success',
-        description: `Welcome back, ${user.name}! Redirecting to dashboard...`,
+        description: `Welcome back! Redirecting to dashboard...`,
       });
       
       // Navigate based on the role from the API response
