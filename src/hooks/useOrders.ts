@@ -150,7 +150,7 @@ const generateMockOrders = (hawkerId: string, isDemo: boolean = true): Order[] =
   });
 };
 
-export const useOrders = (hawkerId: string = '001') => {
+export const useOrders = (hawkerId: string) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
