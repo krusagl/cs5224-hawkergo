@@ -276,10 +276,12 @@ const CustomerMenu = () => {
       ? menuItems
       : menuItems.filter((item) => item.category === activeCategory);
 
-  // Modify the fetchOrderStatus function to use orderAPI.getOrderDetail
+  // Modify the fetchOrderStatus function to include logging
   const fetchOrderStatus = async (orderId: string) => {
+    console.log('Fetching order status for orderId:', orderId);
     try {
-      const orderData = await orderAPI.getOrderDetail(orderId);
+      const orderData = await orderAPI.getOrderDetail(orderId, stallId);
+      console.log('Order status received:', orderData);
       setOrderDetails({
         orderId: orderData.orderID,
         customerName: orderData.customerName,
@@ -290,6 +292,7 @@ const CustomerMenu = () => {
       
       // If order is completed or cancelled, stop polling
       if (orderData.orderStatus === 'completed' || orderData.orderStatus === 'cancelled') {
+        console.log('Order status is final, stopping polling');
         if (pollingInterval) {
           clearInterval(pollingInterval);
           setPollingInterval(null);
@@ -319,9 +322,10 @@ const CustomerMenu = () => {
     };
   }, [orderId]);
 
-  // Modify the searchOrderStatus function
+  // Modify the searchOrderStatus function to include logging
   const searchOrderStatus = async () => {
     if (!searchOrderId.trim()) {
+      console.log('Empty order ID provided for search');
       toast({
         title: "Error",
         description: "Please enter an order ID",
@@ -330,9 +334,23 @@ const CustomerMenu = () => {
       return;
     }
 
+    // Extract stallId from URL
+    const urlStallId = window.location.pathname.split('/stall/')[1];
+    if (!urlStallId) {
+      console.log('No stall ID in URL');
+      toast({
+        title: "Error",
+        description: "Stall information not available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Searching for order status with ID:', searchOrderId, 'for stall:', urlStallId);
     setSearchLoading(true);
     try {
-      const orderData = await orderAPI.getOrderDetail(searchOrderId);
+      const orderData = await orderAPI.getOrderDetail(searchOrderId, urlStallId);
+      console.log('Order details found:', orderData);
       setOrderDetails({
         orderId: orderData.orderID,
         customerName: orderData.customerName,
@@ -361,8 +379,12 @@ const CustomerMenu = () => {
 
   // Update the handleCheckout function
   const handleCheckout = async () => {
-    if (!stallId) return;
+    if (!stallId) {
+      console.error('No stallId available for checkout');
+      return;
+    }
 
+    console.log('Starting checkout process for stall:', stallId);
     setCheckoutLoading(true);
     try {
       const orderData = {
@@ -378,6 +400,7 @@ const CustomerMenu = () => {
         paymentStatus: "paid"
       };
 
+      console.log('Sending order data:', orderData);
       const response = await fetch(`https://xatcwdmrsg.execute-api.ap-southeast-1.amazonaws.com/api/stalls/${stallId}/orders`, {
         method: 'POST',
         headers: {
@@ -387,16 +410,21 @@ const CustomerMenu = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create order');
+        const errorText = await response.text();
+        console.error('Failed to create order. Status:', response.status, 'Response:', errorText);
+        throw new Error(`Failed to create order: ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('Order created successfully:', result);
       setOrderId(result.orderID);
       setOrderPlaced(true);
       setCart([]);
       
       // Fetch the initial order details
-      const orderDetails = await orderAPI.getOrderDetail(result.orderID);
+      console.log('Fetching order details for orderId:', result.orderID);
+      const orderDetails = await orderAPI.getOrderDetail(result.orderID, stallId);
+      console.log('Order details received:', orderDetails);
       setOrderDetails({
         orderId: orderDetails.orderID,
         customerName: orderDetails.customerName,
@@ -410,7 +438,7 @@ const CustomerMenu = () => {
         description: "Your order has been placed successfully.",
       });
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('Error in handleCheckout:', error);
       toast({
         title: "Error",
         description: "Failed to place order. Please try again.",
@@ -422,11 +450,36 @@ const CustomerMenu = () => {
   };
 
   const completeOrder = async () => {
-    if (!orderId) return;
+    // Get orderId from either the checkout process or search bar
+    const orderIdToComplete = orderId || searchOrderId;
+    
+    if (!orderIdToComplete) {
+      console.log('No order ID available');
+      toast({
+        title: "Error",
+        description: "No order ID available to complete",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Extract stallId from URL
+    const urlStallId = window.location.pathname.split('/stall/')[1];
+    if (!urlStallId) {
+      console.log('No stallId in URL');
+      toast({
+        title: "Error",
+        description: "Stall information not available",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
+      console.log('Attempting to complete order:', { orderIdToComplete, urlStallId });
       // Update the order status to completed via API
-      await orderAPI.updateOrderStatus(orderId, 'completed');
+      await orderAPI.updateOrderStatus(orderIdToComplete, urlStallId, 'completed');
+      console.log('Order status updated successfully');
 
       // Update local state
       setOrderDetails(prev => prev ? {
@@ -832,65 +885,74 @@ const CustomerMenu = () => {
               </div>
             </>
           ) : (
-            <div className="p-2">
-              <div className="flex flex-col items-center text-center">
-                {orderDetails?.status === "ready" ? (
-                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                    <CheckCircle className="h-8 w-8 text-green-600" />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                    <Clock className="h-8 w-8 text-blue-600" />
-                  </div>
-                )}
+            <>
+              <DialogHeader>
+                <DialogTitle>Order Status</DialogTitle>
+                <DialogDescription>
+                  Track your order from {stallDetails?.name}
+                </DialogDescription>
+              </DialogHeader>
 
-                <h2 className="text-2xl font-bold mb-2">
-                  {orderDetails?.status === "pending" && "Order Received"}
-                  {orderDetails?.status === "preparing" && "Order Being Prepared"}
-                  {orderDetails?.status === "ready" && "Order Ready for Collection!"}
-                  {orderDetails?.status === "completed" && "Order Completed"}
-                </h2>
-
-                <p className="text-muted-foreground mb-6">
-                  {orderDetails?.status === "ready"
-                    ? "Your order is ready. Please proceed to the stall for collection."
-                    : orderDetails?.status === "completed"
-                    ? "Thank you for your order!"
-                    : `Your order is being prepared by ${stallDetails?.name}. We'll notify you when it's ready.`}
-                </p>
-
-                <div className="space-y-4 w-full">
-                  <div className="text-sm bg-muted/50 p-4 rounded-lg">
-                    <div className="font-medium mb-2">Order Details</div>
-                    <p>Order #: {orderDetails?.orderId}</p>
-                    <p>Customer: {orderDetails?.customerName}</p>
-                    <p>Amount: S${orderDetails?.amount.toFixed(2)}</p>
-                    <p>
-                      Payment:{" "}
-                      {orderDetails?.paymentMethod === "card"
-                        ? "Credit Card"
-                        : "QR Payment"}
-                    </p>
-                  </div>
-
+              <div className="p-2">
+                <div className="flex flex-col items-center text-center">
                   {orderDetails?.status === "ready" ? (
-                    <Button className="w-full" onClick={completeOrder}>
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Confirm Received
-                    </Button>
+                    <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                      <CheckCircle className="h-8 w-8 text-green-600" />
+                    </div>
                   ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setCheckoutOpen(false)}
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Return to Menu
-                    </Button>
+                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                      <Clock className="h-8 w-8 text-blue-600" />
+                    </div>
                   )}
+
+                  <h2 className="text-2xl font-bold mb-2">
+                    {orderDetails?.status === "pending" && "Order Received"}
+                    {orderDetails?.status === "preparing" && "Order Being Prepared"}
+                    {orderDetails?.status === "ready" && "Order Ready for Collection!"}
+                    {orderDetails?.status === "completed" && "Order Completed"}
+                  </h2>
+
+                  <p className="text-muted-foreground mb-6">
+                    {orderDetails?.status === "ready"
+                      ? "Your order is ready. Please proceed to the stall for collection."
+                      : orderDetails?.status === "completed"
+                      ? "Thank you for your order!"
+                      : `Your order is being prepared by ${stallDetails?.name}. We'll notify you when it's ready.`}
+                  </p>
+
+                  <div className="space-y-4 w-full">
+                    <div className="text-sm bg-muted/50 p-4 rounded-lg">
+                      <div className="font-medium mb-2">Order Details</div>
+                      <p>Order #: {orderDetails?.orderId}</p>
+                      <p>Customer: {orderDetails?.customerName}</p>
+                      <p>Amount: S${orderDetails?.amount.toFixed(2)}</p>
+                      <p>
+                        Payment:{" "}
+                        {orderDetails?.paymentMethod === "card"
+                          ? "Credit Card"
+                          : "QR Payment"}
+                      </p>
+                    </div>
+
+                    {orderDetails?.status === "ready" ? (
+                      <Button className="w-full" onClick={completeOrder}>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Confirm Received
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setCheckoutOpen(false)}
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Return to Menu
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

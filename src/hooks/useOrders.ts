@@ -197,7 +197,7 @@ export const useOrders = (hawkerId: string) => {
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']): Promise<UpdateOrderStatusResult> => {
     try {
       // Real mode: update via API
-      await orderAPI.updateOrderStatus(orderId, newStatus);
+      await orderAPI.updateOrderStatus(orderId, hawkerId, newStatus);
       
       // After successful API call, update local state
       const updatedOrders = orders.map(order => {
@@ -228,7 +228,7 @@ export const useOrders = (hawkerId: string) => {
 
   const getOrderDetail = async (orderId: string): Promise<Order | null> => {
     try {
-      const apiOrder = await orderAPI.getOrderDetail(orderId);
+      const apiOrder = await orderAPI.getOrderDetail(orderId, hawkerId);
       return mapApiResponseToOrder(apiOrder);
     } catch (error) {
       console.error('Error fetching order details:', error);

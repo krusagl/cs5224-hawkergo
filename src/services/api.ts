@@ -365,15 +365,15 @@ export const stallAPI = {
 // Order API endpoints
 export const orderAPI = {
   // 12. Get an order detail
-  getOrderDetail: (orderID: string) =>
-    fetchAPI<Order>(`/api/orders/${orderID}`, "GET"),
+  getOrderDetail: (orderID: string, stallID: string) =>
+    fetchAPI<Order>(`/api/stalls/${stallID}/orders/${orderID}`, "GET"),
 
   // 13. Update an order status
-  updateOrderStatus: (orderID: string, orderStatus: Order["orderStatus"]) =>
+  updateOrderStatus: (orderID: string, stallID: string, orderStatus: Order["orderStatus"]) =>
     fetchAPI<{ orderID: string; message: string }>(
       `/api/orders/${orderID}`,
       "PUT",
-      { orderStatus }
+      { stallID, orderStatus }
     ),
 };
 
