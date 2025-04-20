@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -79,9 +78,11 @@ const Register = () => {
 
       toast({
         title: 'Success',
-        description: 'Account created successfully. Redirecting to dashboard...',
+        description: 'Account created successfully. Please log in to continue.',
       });
-      navigate('/hawker/dashboard');
+      
+      // Navigate to login page
+      navigate('/hawker/login');
     } catch (error) {
       console.error('Registration error:', error);
       toast({

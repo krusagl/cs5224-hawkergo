@@ -153,7 +153,7 @@ const Login = () => {
       setLoading(true);
       
       // Call register function with all user data
-      const user = await register({
+      await register({
         name,
         email,
         role: 'hawker',
@@ -165,11 +165,11 @@ const Login = () => {
 
       toast({
         title: 'Success',
-        description: 'Account created successfully. Redirecting to dashboard...',
+        description: 'Account created successfully. Please log in to continue.',
       });
       
-      // Navigate to dashboard
-      navigate('/hawker/dashboard');
+      // Reset form and redirect to login
+      resetForm();
     } catch (error) {
       console.error('Registration error:', error);
       let errorMessage = 'Failed to create account. Please try again.';
