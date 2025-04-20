@@ -91,7 +91,9 @@ const CustomerMenu = () => {
   const [searchLoading, setSearchLoading] = useState(false);
 
   // Add new state for polling
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   // Add new state for order details
   const [orderDetails, setOrderDetails] = useState<{
@@ -167,7 +169,9 @@ const CustomerMenu = () => {
               available: item.menuAvailability,
             }));
             setMenuItems(apiMenuItems);
-            setCategories([...new Set(apiMenuItems.map((item) => item.category))]);
+            setCategories([
+              ...new Set(apiMenuItems.map((item) => item.category)),
+            ]);
           } catch (error) {
             console.error("Failed to fetch menu items:", error);
             toast({
@@ -285,18 +289,21 @@ const CustomerMenu = () => {
         customerName: orderData.customerName,
         amount: orderData.orderTotalCost,
         paymentMethod: orderData.paymentMethod,
-        status: orderData.orderStatus
+        status: orderData.orderStatus,
       });
-      
+
       // If order is completed or cancelled, stop polling
-      if (orderData.orderStatus === 'completed' || orderData.orderStatus === 'cancelled') {
+      if (
+        orderData.orderStatus === "completed" ||
+        orderData.orderStatus === "cancelled"
+      ) {
         if (pollingInterval) {
           clearInterval(pollingInterval);
           setPollingInterval(null);
         }
       }
     } catch (error) {
-      console.error('Error fetching order status:', error);
+      console.error("Error fetching order status:", error);
     }
   };
 
@@ -338,17 +345,17 @@ const CustomerMenu = () => {
         customerName: orderData.customerName,
         amount: orderData.orderTotalCost,
         paymentMethod: orderData.paymentMethod,
-        status: orderData.orderStatus
+        status: orderData.orderStatus,
       });
       setOrderPlaced(true);
       setCheckoutOpen(true);
-      
+
       toast({
         title: "Order Found",
         description: `Order status: ${orderData.orderStatus}`,
       });
     } catch (error) {
-      console.error('Error searching order:', error);
+      console.error("Error searching order:", error);
       toast({
         title: "Error",
         description: "Order not found. Please check the order ID.",
@@ -368,33 +375,36 @@ const CustomerMenu = () => {
       const orderData = {
         customerName,
         customerContact: contactNumber,
-        orderDetails: cart.map(item => ({
+        orderDetails: cart.map((item) => ({
           menuItemName: item.name,
           quantity: item.quantity,
-          price: item.price
+          price: item.price,
         })),
         orderTotalCost: cartTotal,
         paymentMethod: selectedPaymentMethod,
-        paymentStatus: "paid"
+        paymentStatus: "paid",
       };
 
-      const response = await fetch(`https://xatcwdmrsg.execute-api.ap-southeast-1.amazonaws.com/api/stalls/${stallId}/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData)
-      });
+      const response = await fetch(
+        `https://xatcwdmrsg.execute-api.ap-southeast-1.amazonaws.com/api/stalls/${stallId}/orders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(orderData),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to create order');
+        throw new Error("Failed to create order");
       }
 
       const result = await response.json();
       setOrderId(result.orderID);
       setOrderPlaced(true);
       setCart([]);
-      
+
       // Fetch the initial order details
       const orderDetails = await orderAPI.getOrderDetail(result.orderID);
       setOrderDetails({
@@ -402,15 +412,15 @@ const CustomerMenu = () => {
         customerName: orderDetails.customerName,
         amount: orderDetails.orderTotalCost,
         paymentMethod: orderDetails.paymentMethod,
-        status: orderDetails.orderStatus
+        status: orderDetails.orderStatus,
       });
-      
+
       toast({
         title: "Order Placed!",
         description: "Your order has been placed successfully.",
       });
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error("Error creating order:", error);
       toast({
         title: "Error",
         description: "Failed to place order. Please try again.",
@@ -426,13 +436,17 @@ const CustomerMenu = () => {
 
     try {
       // Update the order status to completed via API
-      await orderAPI.updateOrderStatus(orderId, 'completed');
+      await orderAPI.updateOrderStatus(orderId, "completed");
 
       // Update local state
-      setOrderDetails(prev => prev ? {
-        ...prev,
-        status: 'completed'
-      } : null);
+      setOrderDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "completed",
+            }
+          : null
+      );
 
       toast({
         title: "Order Completed",
@@ -446,7 +460,7 @@ const CustomerMenu = () => {
       setOrderDetails(null);
       setCart([]);
     } catch (error) {
-      console.error('Error completing order:', error);
+      console.error("Error completing order:", error);
       toast({
         title: "Error",
         description: "Failed to complete order. Please try again.",
@@ -696,7 +710,7 @@ const CustomerMenu = () => {
       </div>
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           {!orderPlaced ? (
             <>
               <DialogHeader>
@@ -846,8 +860,10 @@ const CustomerMenu = () => {
 
                 <h2 className="text-2xl font-bold mb-2">
                   {orderDetails?.status === "pending" && "Order Received"}
-                  {orderDetails?.status === "preparing" && "Order Being Prepared"}
-                  {orderDetails?.status === "ready" && "Order Ready for Collection!"}
+                  {orderDetails?.status === "preparing" &&
+                    "Order Being Prepared"}
+                  {orderDetails?.status === "ready" &&
+                    "Order Ready for Collection!"}
                   {orderDetails?.status === "completed" && "Order Completed"}
                 </h2>
 
